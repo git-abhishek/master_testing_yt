@@ -29,7 +29,7 @@ env:
 matrix:
   include:
     - python: 2.7
-      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0 YAML=yaml==0.1.7 MPI4PY=mpi4py==2.0.0 OPENPYXL=openpyxl==2.4.8 BOTTTLENECK=bottleneck==1.2.1
+      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0 YAML= MPI4PY=mpi4py==2.0.0 OPENPYXL=openpyxl==2.4.8 BOTTTLENECK=bottleneck==1.2.1
     - python: 2.7
     - python: 3.6
     - os: osx
