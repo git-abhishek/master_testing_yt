@@ -22,14 +22,13 @@ env:
     FASTCACHE=fastcache
     FLAKE8=flake8
     YAML=yaml
-    MPI4PY=mpi4py
     OPENPYXL=openpyxl
     BOTTTLENECK=bottleneck
 
 matrix:
   include:
     - python: 2.7
-      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0 YAML= MPI4PY=mpi4py==2.0.0 OPENPYXL=openpyxl==2.4.8 BOTTTLENECK=bottleneck==1.2.1
+      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0 YAML= OPENPYXL=openpyxl==2.4.8 BOTTTLENECK=bottleneck==1.2.1
     - python: 2.7
     - python: 3.6
     - os: osx
@@ -68,7 +67,7 @@ install:
     pip install --upgrade wheel
     pip install --upgrade setuptools
     # Install dependencies
-    pip install mock $NUMPY $SCIPY $H5PY $CYTHON $MATPLOTLIB $SYMPY $FASTCACHE $IPYTHON $FLAKE8 $YAML $MPI4PY $OPENPYXL $BOTTTLENECK nose nose-timer
+    pip install mock $NUMPY $SCIPY $H5PY $CYTHON $MATPLOTLIB $SYMPY $FASTCACHE $IPYTHON $FLAKE8 $YAML $OPENPYXL $BOTTTLENECK nose nose-timer
     pip install -r requirements.txt
     # install yt
     pip install -e .
