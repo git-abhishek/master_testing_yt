@@ -75,5 +75,7 @@ install:
 script:
   - |
     nosetests -c nose.cfg yt
+    coverage report
+    
 after_success:
   - coveralls
