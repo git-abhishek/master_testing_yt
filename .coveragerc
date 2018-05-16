@@ -12,6 +12,6 @@ omit=doc
 	 */utilities/lru_cache.py
 	 utilities/fits_image.py
 	 utilities/poster/*
-	 extern/*
-	 mods.py
+	 */extern/*
+	 yt/mods.py
 	 analysis_modules/*
