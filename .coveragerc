@@ -1,0 +1,17 @@
+[run]
+plugins = Cython.Coverage
+
+[report]
+omit=doc
+	 benchmarks
+	 *\api.py
+	 *\__init__.py
+	 *\__config__.py
+	 visualization\_mpl_imports.py
+	 utilities\lodgeit.py
+	 utilities\lru_cache.py
+	 utilities\fits_image.py
+	 utilities\poster\*
+	 extern\*
+	 mods.py
+	 analysis_modules\*
