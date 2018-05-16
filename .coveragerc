@@ -4,14 +4,14 @@ plugins = Cython.Coverage
 [report]
 omit=doc
 	 benchmarks
-	 *\api.py
-	 *\__init__.py
-	 *\__config__.py
-	 visualization\_mpl_imports.py
-	 utilities\lodgeit.py
-	 utilities\lru_cache.py
-	 utilities\fits_image.py
-	 utilities\poster\*
-	 extern\*
+	 */api.py
+	 */__init__.py
+	 */__config__.py
+	 visualization/_mpl_imports.py
+	 yt/utilities/lodgeit.py
+	 */utilities/lru_cache.py
+	 utilities/fits_image.py
+	 utilities/poster/*
+	 extern/*
 	 mods.py
-	 analysis_modules\*
+	 analysis_modules/*
