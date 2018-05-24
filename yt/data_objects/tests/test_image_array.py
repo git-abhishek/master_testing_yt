@@ -85,8 +85,14 @@ class TestImageArray(unittest.TestCase):
         im_arr.save('test_2d_ImageArray_ds', png=False, dataset_name='Random_DS')
 
     def test_image_array_rgb_png(self):
+        im = np.zeros([64, 128])
+        for i in range(im.shape[0]):
+            im[i, :] = np.linspace(0., 0.3 * 2, im.shape[1])
+        im_arr = ImageArray(im)
+        im_arr.save('standard-image', hdf5=False)
+
         im_arr = ImageArray(dummy_image(10.0, 3))
-        im_arr.save('standard', hdf5=False)
+        im_arr.save('standard-png', hdf5=False)
 
     def test_image_array_rgba_png(self):
         im_arr = ImageArray(dummy_image(10.0, 4))
@@ -101,7 +107,8 @@ class TestImageArray(unittest.TestCase):
             warnings.simplefilter("always")
             # Trigger a warning.
             im_arr.write_png('clipped.png', clip_ratio=0.5)
-            assert str(w) == "'clip_ratio' keyword is deprecated. Use 'sigma_clip' instead"
+            assert str(w[0].message) == ("'clip_ratio' keyword is deprecated."
+                                         " Use 'sigma_clip' instead")
 
     def test_image_array_background(self):
         im_arr = ImageArray(dummy_image(10.0, 4))
