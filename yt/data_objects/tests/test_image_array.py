@@ -121,7 +121,7 @@ class TestImageArray(unittest.TestCase):
     def test_write_image(self):
         im_arr = ImageArray(dummy_image(10.0, 4))
         im_arr.write_image('with_cmap', cmap_name='hot')
-        im_arr.write_image('channel_1.png', channel=1)
+        im_arr.write_image('channel_1.png', channel=2)
 
     def tearDown(self):
         os.chdir(self.curdir)
