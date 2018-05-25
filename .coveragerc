@@ -1,5 +1,6 @@
 [run]
 plugins = Cython.Coverage
+branch = True
 
 [report]
 omit=*/api.py
@@ -8,6 +9,7 @@ omit=*/api.py
 	 yt/analysis_modules/*
 	 yt/extern/*
 	 yt/mods.py
+	 yt/*/tests/*
 	 yt/utilities/fits_image.py
 	 yt/utilities/lodgeit.py
 	 yt/utilities/lru_cache.py
