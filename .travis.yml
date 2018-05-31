@@ -1,8 +1,6 @@
 sudo: false
 language: node_js
-stages:
-  - lint
-  - test
+
 os:
   - linux
   - osx
@@ -12,6 +10,10 @@ node_js:
   - 6
   - 4
 
+stages:
+  - lint
+  - test
+  
 jobs:
   include:
     - stage: lint
