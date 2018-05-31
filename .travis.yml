@@ -19,7 +19,5 @@ jobs:
     - stage: lint
       script: echo lint
 
-works:
-  - stage: other
-    script: echo hello
+script: echo hello
 
