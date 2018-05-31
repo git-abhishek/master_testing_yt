@@ -54,37 +54,35 @@ install:
     # install yt
     pip install -e .
 
-stages:
-  - lint
-  - test
-
 jobs:
   include:
     - stage: lint
+      python: 3.4
+      env: NUMPY= SCIPY= H5PY= CYTHON= MATPLOTLIB= SYMPY= FASTCACHE= IPYTHON= CODECOV= COVERAGE=
       script: echo lint
     
-    - stage: test
+    - stage: tests
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0    
-      script: echo test
+      script: echo test 2.7
     
-    - stage: test
+    - stage: tests
       python: 2.7
-      script: echo test
+      script: echo test 2.7'
 
-    - stage: test
+    - stage: tests
       python: 3.4
-      script: echo test
+      script: echo test 3.4
 
-    - stage: test
+    - stage: tests
       python: 3.5
-      script: echo test
+      script: echo test 3.5
 
-    - stage: test
+    - stage: tests
       python: 3.6
-      script: echo test
+      script: echo test 3.6
 
-    - stage: test
+    - stage: tests
       os: osx
       osx_image: xcode7.3
       language: generic  # https://github.com/travis-ci/travis-ci/issues/2312
@@ -94,7 +92,7 @@ jobs:
           - $HOME/Library/Caches/pip
           # `cache` does not support `env`-like `global` so copy-paste from top
           - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
-      script: echo test
+      script: echo test osx
 
 after_success:
   - codecov
