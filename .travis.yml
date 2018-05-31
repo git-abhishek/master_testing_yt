@@ -58,29 +58,33 @@ jobs:
   include:
     - stage: lint
       python: 3.4
-      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= FLAKE8=flake8
-      script: echo lint
+      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON=
+      script: flake8 yt/
     
     - stage: tests
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
-      script: echo test 2.7
+      script: coverage run $(which nosetests) -c nose.cfg yt
     
     - stage: tests
       python: 2.7
-      script: echo test 2.7'
+      env: FLAKE8=
+      script: coverage run $(which nosetests) -c nose.cfg yt
 
     - stage: tests
       python: 3.4
-      script: echo test 3.4
+      env: FLAKE8=
+      script: coverage run $(which nosetests) -c nose.cfg yt
 
     - stage: tests
       python: 3.5
-      script: echo test 3.5
+      env: FLAKE8=
+      script: coverage run $(which nosetests) -c nose.cfg yt
 
     - stage: tests
       python: 3.6
-      script: echo test 3.6
+      env: FLAKE8=
+      script: coverage run $(which nosetests) -c nose.cfg yt
 
     - stage: tests
       os: osx
@@ -92,7 +96,7 @@ jobs:
           - $HOME/Library/Caches/pip
           # `cache` does not support `env`-like `global` so copy-paste from top
           - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
-      script: echo test osx
+      script: coverage run $(which nosetests) -c nose.cfg yt
 
 after_success:
   - codecov
