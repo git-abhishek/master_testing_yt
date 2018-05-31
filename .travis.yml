@@ -71,7 +71,6 @@ install:
     pip install mock $NUMPY $SCIPY $H5PY $CYTHON $MATPLOTLIB $SYMPY $FASTCACHE $IPYTHON $FLAKE8 $CODECOV $COVERAGE nose nose-timer
     # install yt
     pip install -e .
-<<<<<<< HEAD
 
 script: coverage run $(which nosetests) -c nose.cfg yt
 
