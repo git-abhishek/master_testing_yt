@@ -11,8 +11,10 @@ node_js:
   - 8
   - 6
   - 4
-script: echo test
+
 jobs:
   include:
     - stage: lint
-script: echo lint
+      script: echo lint
+
+script: echo test
