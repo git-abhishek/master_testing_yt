@@ -12,11 +12,14 @@ node_js:
 
 stages:
   - lint
-  - test
-  
+  - works
+
 jobs:
   include:
     - stage: lint
       script: echo lint
 
-script: echo test
+works:
+  - stage: other
+    script: echo hello
+
