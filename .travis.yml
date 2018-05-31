@@ -58,12 +58,12 @@ jobs:
   include:
     - stage: lint
       python: 3.4
-      env: NUMPY= SCIPY= H5PY= CYTHON= MATPLOTLIB= SYMPY= FASTCACHE= IPYTHON= CODECOV= COVERAGE=
+      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= FLAKE8=flake8
       script: echo lint
     
     - stage: tests
       python: 2.7
-      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0    
+      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
       script: echo test 2.7
     
     - stage: tests
