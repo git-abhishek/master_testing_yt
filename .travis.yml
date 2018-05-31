@@ -58,6 +58,7 @@ before_install:
     echo "[yt]" > $HOME/.config/yt/ytrc
     echo "suppressStreamLogging = True" >> $HOME/.config/yt/ytrc
     cat $HOME/.config/yt/ytrc
+
 install:
   - |
     # setup environment
@@ -70,9 +71,17 @@ install:
     pip install mock $NUMPY $SCIPY $H5PY $CYTHON $MATPLOTLIB $SYMPY $FASTCACHE $IPYTHON $FLAKE8 $CODECOV $COVERAGE nose nose-timer
     # install yt
     pip install -e .
-script:
-  - |
-    coverage run $(which nosetests) -c nose.cfg yt
-    
+
+script: coverage run $(which nosetests) -c nose.cfg yt
+
+stages:
+  - lint
+  - test
+
+jobs:
+  include:
+    - stage: lint
+      script: flake8 yt/
+
 after_success:
-- codecov
+  - codecov
