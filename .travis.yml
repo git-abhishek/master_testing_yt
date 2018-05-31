@@ -74,15 +74,14 @@ install:
 
 stages:
   - lint
-  - tests
+  - works
 
 jobs:
   include:
     - stage: lint
-      script: flake8 yt/
+      script: echo lint
 
-
-script: coverage run $(which nosetests) -c nose.cfg yt
+script: echo hello
 
 after_success:
   - codecov
