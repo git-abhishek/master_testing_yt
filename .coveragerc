@@ -6,10 +6,10 @@ branch = True
 omit=*/api.py
 	 */__init__.py
 	 */__config__.py
+	 */tests/*
 	 yt/analysis_modules/*
 	 yt/extern/*
 	 yt/mods.py
-	 yt/*/tests/*
 	 yt/utilities/fits_image.py
 	 yt/utilities/lodgeit.py
 	 yt/utilities/lru_cache.py
