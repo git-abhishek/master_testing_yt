@@ -6,9 +6,7 @@ import numpy as np
 
 from unittest import TestCase
 
-from yt.testing import fake_random_ds, assert_almost_equal, assert_equal, \
-    requires_file
-from yt.convenience import load
+from yt.testing import fake_random_ds, assert_almost_equal, assert_equal
 
 def setup():
     from yt.config import ytcfg
@@ -35,8 +33,6 @@ def test_sampling():
         vert_shape = surf.vertices.shape
         assert_equal(dens.shape[0], vert_shape[1]//vert_shape[0])
         assert_equal(str(dens.units), 'g/cm**3')
-
-ISOGAL = 'IsolatedGalaxy/galaxy0030/galaxy0030'
 
 class ExporterTests(TestCase):
 
@@ -99,16 +95,16 @@ class ExporterTests(TestCase):
         assert os.path.exists('my_galaxy_emis.obj')
         assert os.path.exists('my_galaxy_emis.mtl')
 
-@requires_file(ISOGAL)
-def test_correct_output_unit():
+def test_correct_output_unit_fake_ds():
     # see issue #1368
-    ds = load(ISOGAL)
+    ds = fake_random_ds(64, nprocs=4, particles=16**3)
     x = y = z = .5
-    sp1 = ds.sphere((x,y,z), (300, 'kpc'))
-    Nmax = sp1.max('HI_Density')
-    sur = ds.surface(sp1,"HI_Density", .5*Nmax)
+    sp1 = ds.sphere((x, y, z), (300, 'kpc'))
+    Nmax = sp1.max('density')
+    sur = ds.surface(sp1, "density", .5*Nmax)
     sur['x'][0]
 
+<<<<<<< HEAD
 def test_correct_output_unit_fake_ds():
     # implementing test_correct_output_unit() with fake dataset
     ds = fake_random_ds(64, nprocs=4, particles=16**3)
@@ -121,6 +117,11 @@ def test_correct_output_unit_fake_ds():
 def test_radius_surface():
     # see #1407
     ds = fake_random_ds(64, nprocs=4, particles=16**3)
+=======
+def test_radius_surface():
+    # see #1407
+    ds = fake_random_ds(64, nprocs=4, particles=16**3, length_unit=10.0)
+>>>>>>> be560338a0a144055706b8a4a3295606a3f25eef
     reg = ds.all_data()
     sp = ds.sphere(ds.domain_center, (0.5, 'code_length'))
     for obj in [reg, sp]:
@@ -130,7 +131,5 @@ def test_radius_surface():
                 surface.surface_area.v, 4*np.pi*rad**2, decimal=2)
             verts = surface.vertices
             for i in range(3):
-                assert_almost_equal(
-                    verts[i, :].min().v, 0.5-rad, decimal=2)
-                assert_almost_equal(
-                    verts[i, :].max().v, 0.5+rad, decimal=2)
+                assert_almost_equal(verts[i, :].min().v, 0.5-rad, decimal=2)
+                assert_almost_equal(verts[i, :].max().v, 0.5+rad, decimal=2)
