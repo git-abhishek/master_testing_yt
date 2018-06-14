@@ -23,7 +23,6 @@ import shelve
 from collections import defaultdict
 from contextlib import contextmanager
 
-from yt.data_objects.particle_io import particle_handler_registry
 from yt.fields.derived_field import \
     DerivedField
 from yt.frontends.ytdata.utilities import \
@@ -1262,7 +1261,7 @@ class YTSelectionContainer(YTDataContainer, ParallelAnalysisInterface):
             requested = self._determine_fields(list(set(fd.requested)))
             deps = [d for d in requested if d not in fields_to_get]
             fields_to_get += deps
-        return fields_to_get
+        return sorted(fields_to_get)
 
     def get_data(self, fields=None):
         if self._current_chunk is None:
@@ -1439,6 +1438,33 @@ class YTSelectionContainer(YTDataContainer, ParallelAnalysisInterface):
         self._locked = True
         yield
         self._locked = False
+
+    @contextmanager
+    def _ds_hold(self, new_ds):
+        """
+        This contextmanager is used to take a data object and preserve its
+        attributes but allow the dataset that underlies it to be swapped out.
+        This is typically only used internally, and differences in unit systems
+        may present interesting possibilities.
+        """
+        old_ds = self.ds
+        old_index = self._index
+        self.ds = new_ds
+        self._index = new_ds.index
+        old_chunk_info = self._chunk_info
+        old_chunk = self._current_chunk
+        old_size = self.size
+        self._chunk_info = None
+        self._current_chunk = None
+        self.size = None
+        self._index._identify_base_chunk(self)
+        with self._chunked_read(None):
+            yield
+        self._index = old_index
+        self.ds = old_ds
+        self._chunk_info = old_chunk_info
+        self._current_chunk = old_chunk
+        self.size = old_size
 
     @contextmanager
     def _chunked_read(self, chunk):
@@ -1814,7 +1840,7 @@ class YTSelectionContainer3D(YTSelectionContainer):
             else: f = open(filename, "w")
             for v1 in verts:
                 f.write("v %0.16e %0.16e %0.16e\n" % (v1[0], v1[1], v1[2]))
-            for i in range(len(verts)/3):
+            for i in range(len(verts)//3):
                 f.write("f %s %s %s\n" % (i*3+1, i*3+2, i*3+3))
             if not hasattr(filename, "write"): f.close()
         if sample_values is not None:
@@ -1978,16 +2004,6 @@ class YTSelectionContainer3D(YTSelectionContainer):
             if default_value is not None:
                 grid[field] = np.ones(grid.ActiveDimensions)*default_value
             grid[field][self._get_point_indices(grid)] = value
-
-    _particle_handler = None
-
-    @property
-    def particles(self):
-        if self._particle_handler is None:
-            self._particle_handler = \
-                particle_handler_registry[self._type_name](self.ds, self)
-        return self._particle_handler
-
 
     def volume(self):
         """
