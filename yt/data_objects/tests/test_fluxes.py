@@ -104,18 +104,9 @@ def test_correct_output_unit_fake_ds():
     sur = ds.surface(sp1, "density", .5*Nmax)
     sur['x'][0]
 
-def test_correct_output_unit_fake_ds():
-    # implementing test_correct_output_unit() with fake dataset
-    ds = fake_random_ds(64, nprocs=4, particles=16**3)
-    x = y = z = .5
-    sp1 = ds.sphere((x, y, z), (300, 'kpc'))
-    Nmax = sp1.max('density')
-    sur = ds.surface(sp1, "density", .5*Nmax)
-    sur['x'][0]
-
 def test_radius_surface():
     # see #1407
-    ds = fake_random_ds(64, nprocs=4, particles=16**3)
+    ds = fake_random_ds(64, nprocs=4, particles=16**3, length_unit=10.0)
     reg = ds.all_data()
     sp = ds.sphere(ds.domain_center, (0.5, 'code_length'))
     for obj in [reg, sp]:
@@ -126,4 +117,3 @@ def test_radius_surface():
             verts = surface.vertices
             for i in range(3):
                 assert_almost_equal(verts[i, :].min().v, 0.5-rad, decimal=2)
-                assert_almost_equal(verts[i, :].max().v, 0.5+rad, decimal=2)
