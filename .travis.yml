@@ -24,8 +24,6 @@ env:
     CODECOV=codecov
     COVERAGE=coverage
     YAML=pyyaml
-    RUN_UNIT_TESTS="coverage run $(which nosetests) --attr '!answer_test' -c nose.cfg yt"
-    RUN_ANSWER_TESTS="python tests/nose_runner.py 'travis'"
 
 before_install:
   - |
@@ -63,6 +61,8 @@ jobs:
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
       script:
+      - pwd
+      - ls
       - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
       - python tests/nose_runner.py 'travis'
 
@@ -70,28 +70,26 @@ jobs:
       python: 2.7
       env: FLAKE8=
       script:
-      - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests
       - python tests/nose_runner.py 'travis'
 
     - stage: tests
       python: 3.4
       env: FLAKE8=
       script:
-      - eval "$RUN_UNIT_TESTS"
+      - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt
       - python tests/nose_runner.py 'travis'
 
     - stage: tests
       python: 3.5
       env: FLAKE8=
       script:
-      - eval $RUN_UNIT_TESTS
+      - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
       - python tests/nose_runner.py 'travis'
 
     - stage: tests
       python: 3.6
       env: FLAKE8=
       script:
-      - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests
       - python tests/nose_runner.py 'travis'
 
     - stage: tests

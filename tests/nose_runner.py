@@ -3,6 +3,8 @@ import os
 import yaml
 import multiprocessing
 import nose
+from coverage import Coverage
+
 from yt.extern.six import StringIO
 from yt.config import ytcfg
 from yt.utilities.answer_testing.framework import AnswerTesting
@@ -100,7 +102,7 @@ def generate_tasks_travis():
     data = '\n'.join([line for line in lines.split('\n')])
     tests = yaml.load(data)
 
-    base_argv = ['--local-dir=%s' % answers_dir, '-s', '--nologcapture',
+    base_argv = ['--local-dir=%s' % answers_dir, '--nologcapture',
                  '--with-answer-testing', '--local', '-d', '-v']
     args = []
 
@@ -121,6 +123,7 @@ def generate_tasks_input(platform):
     return generate_tasks_jenkins()
 
 if __name__ == "__main__":
+    BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
     # multiprocessing.log_to_stderr(logging.DEBUG)
     tasks = multiprocessing.JoinableQueue()
     results = multiprocessing.Queue()
