@@ -58,8 +58,7 @@ class NoseTask(object):
     def __str__(self):
         return 'WILL DO self.name = %s' % self.name
 
-
-def generate_tasks_input():
+def generate_tasks_jenkins():
     pyver = "py{}{}".format(sys.version_info.major, sys.version_info.minor)
     if sys.version_info < (3, 0, 0):
         DROP_TAG = "py3"
@@ -93,6 +92,34 @@ def generate_tasks_input():
             for item, exclusive in args]
     return args
 
+def generate_tasks_travis():
+    answers_dir = os.path.join("..", "answer-store")
+    test_file = os.path.join("tests", "travis_answer_tests.yaml")
+    with open(test_file, 'r') as obj:
+        lines = obj.read()
+    data = '\n'.join([line for line in lines.split('\n')])
+    tests = yaml.load(data)
+
+    base_argv = ['--local-dir=%s' % answers_dir, '-s', '--nologcapture',
+                 '--with-answer-testing', '--local', '-d', '-v']
+    args = []
+
+    for answer in list(tests["answer_tests"].keys()):
+        if tests["answer_tests"][answer] is None:
+            continue
+        argv = [answer]
+        argv += base_argv
+        argv.append('--answer-name=%s' % answer)
+        argv += tests["answer_tests"][answer]
+        args.append((argv, False))
+
+    return args
+
+def generate_tasks_input(platform):
+    if platform=="travis":
+        return generate_tasks_travis()
+    return generate_tasks_jenkins()
+
 if __name__ == "__main__":
     # multiprocessing.log_to_stderr(logging.DEBUG)
     tasks = multiprocessing.JoinableQueue()
@@ -104,7 +131,7 @@ if __name__ == "__main__":
         w.start()
 
     num_jobs = 0
-    for job in generate_tasks_input():
+    for job in generate_tasks_input(sys.argv[1]):
         if job[1]:
             num_consumers -= 1  # take into account exclusive jobs
         tasks.put(NoseTask(job))

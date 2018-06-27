@@ -10,6 +10,7 @@ Tests for making line plots
 #
 # The full license is in the file COPYING.txt, distributed with this software.
 #-----------------------------------------------------------------------------
+from nose.plugins.attrib import attr
 from nose.tools import assert_raises
 
 import yt
@@ -33,6 +34,7 @@ def compare(ds, plot, test_prefix, decimals=12):
     test.prefix = test_prefix
     return test
 
+@attr("answer_test")
 def test_line_plot():
     ds = fake_random_ds(4)
     fields = [field for field in ds.field_list if field[0] == 'stream']
@@ -46,6 +48,7 @@ def test_line_plot():
     plot.annotate_title(fields[0], "Density Plot")
     yield compare(ds, plot, "answers_line_plot")
 
+@attr("answer_test")
 def test_multi_line_plot():
     ds = fake_random_ds(4)
     fields = [field for field in ds.field_list if field[0] == 'stream']
