@@ -40,6 +40,8 @@ before_install:
     echo "[yt]" > $HOME/.config/yt/ytrc
     echo "suppressStreamLogging = True" >> $HOME/.config/yt/ytrc
     cat $HOME/.config/yt/ytrc
+    mkdir $HOME/.config/matplotlib
+    mv matplotlibrc $HOME/.config/matplotlib/
 
 install:
   - |
@@ -53,33 +55,48 @@ install:
     pip install mock $NUMPY $SCIPY $H5PY $CYTHON $MATPLOTLIB $SYMPY $FASTCACHE $IPYTHON $FLAKE8 $CODECOV $COVERAGE nose nose-timer
     # install yt
     pip install -e .
-
+    
 jobs:
   include:
-    - stage: lint
-      python: 3.4
-      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON=
-      script: flake8 yt/
-
     - stage: tests
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script: 
+      - python check_matplotlib.py
+      - echo $HOME
+      - cat /home/travis/build/git-abhishek/master_testing_yt/venv/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
+      - coverage run $(which nosetests) -c nose.cfg visualization/tests/test_color_maps.py
+      - python check_matplotlib.py
 
     - stage: tests
       python: 3.4
       env: FLAKE8=
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script: 
+      - python check_matplotlib.py
+      - echo $HOME
+      - cat /home/travis/build/git-abhishek/master_testing_yt/venv/lib/python3.4/site-packages/matplotlib/mpl-data/matplotlibrc
+      - coverage run $(which nosetests) -c nose.cfg visualization/tests/test_color_maps.py
+      - python check_matplotlib.py
 
     - stage: tests
       python: 3.5
       env: FLAKE8=
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script:  
+      - python check_matplotlib.py
+      - echo $HOME
+      - cat /home/travis/build/git-abhishek/master_testing_yt/venv/lib/python3.5/site-packages/matplotlib/mpl-data/matplotlibrc
+      - coverage run $(which nosetests) -c nose.cfg visualization/tests/test_color_maps.py
+      - python check_matplotlib.py
 
     - stage: tests
       python: 3.6
       env: FLAKE8=
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script:
+      - python check_matplotlib.py
+      - echo $HOME
+      - cat /home/travis/build/git-abhishek/master_testing_yt/venv/lib/python3.6/site-packages/matplotlib/mpl-data/matplotlibrc
+      - coverage run $(which nosetests) -c nose.cfg visualization/tests/test_color_maps.py
+      - python check_matplotlib.py
 
     - stage: tests
       os: osx
@@ -91,7 +108,12 @@ jobs:
           - $HOME/Library/Caches/pip
           # `cache` does not support `env`-like `global` so copy-paste from top
           - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script:  
+      - python check_matplotlib.py
+      - echo $HOME
+      - cat /usr/local/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
+      - coverage run $(which nosetests) -c nose.cfg visualization/tests/test_color_maps.py
+      - python check_matplotlib.py
 
 after_success:
   - codecov
