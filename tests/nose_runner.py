@@ -1,14 +1,16 @@
-import sys
-import os
-import yaml
+import argparse
 import multiprocessing
-import nose
-from coverage import Coverage
+import os
+import sys
 
-from yt.extern.six import StringIO
-from yt.config import ytcfg
-from yt.utilities.answer_testing.framework import AnswerTesting
+import nose
 import numpy
+import yaml
+
+from yt.config import ytcfg
+from yt.extern.six import StringIO
+from yt.utilities.answer_testing.framework import AnswerTesting
+
 numpy.set_printoptions(threshold=5, edgeitems=1, precision=4)
 
 class NoseWorker(multiprocessing.Process):
@@ -60,7 +62,8 @@ class NoseTask(object):
     def __str__(self):
         return 'WILL DO self.name = %s' % self.name
 
-def generate_tasks_jenkins():
+
+def generate_tasks_input():
     pyver = "py{}{}".format(sys.version_info.major, sys.version_info.minor)
     if sys.version_info < (3, 0, 0):
         DROP_TAG = "py3"
@@ -94,57 +97,71 @@ def generate_tasks_jenkins():
             for item, exclusive in args]
     return args
 
-def generate_tasks_travis():
-    answers_dir = os.path.join("..", "answer-store")
-    test_file = os.path.join("tests", "travis_answer_tests.yaml")
+def generate_cloud_answer_tasks():
+    answers_dir = "answer-store"
+    test_file = os.path.join("tests", "cloud_answer_tests.yaml")
     with open(test_file, 'r') as obj:
         lines = obj.read()
     data = '\n'.join([line for line in lines.split('\n')])
     tests = yaml.load(data)
 
-    base_argv = ['--local-dir=%s' % answers_dir, '--nologcapture',
-                 '--with-answer-testing', '--local', '-d', '-v']
+    base_argv = ['--with-answer-testing', '--with-timer', '--nologcapture',
+                 '-d', '-v', '--local', '--local-dir=%s' % answers_dir]
     args = []
 
     for answer in list(tests["answer_tests"].keys()):
         if tests["answer_tests"][answer] is None:
             continue
-        argv = [answer]
+        argv = []
         argv += base_argv
         argv.append('--answer-name=%s' % answer)
         argv += tests["answer_tests"][answer]
-        args.append((argv, False))
+        args.append(argv)
 
     return args
 
-def generate_tasks_input(platform):
-    if platform=="travis":
-        return generate_tasks_travis()
-    return generate_tasks_jenkins()
+def run_answer_test_cloud():
+    # 0 on success and 1 on failure
+    status = 0
+    for job in generate_cloud_answer_tasks():
+        print("Running Job:", job)
+        result = nose.run(argv=job, addplugins=[AnswerTesting()], exit=False)
+        status = result or status
+    # upload images if any of the answer tests failed
+    return status
 
 if __name__ == "__main__":
-    BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
-    # multiprocessing.log_to_stderr(logging.DEBUG)
-    tasks = multiprocessing.JoinableQueue()
-    results = multiprocessing.Queue()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r", "--runAnswerTestOnCloud", action="store_true",
+                        help="Run answer tests on cloud platforms like Travis, "
+                             "AppVeyor.")
+    args = parser.parse_args()
+    if args.runAnswerTestOnCloud:
+        print("Runnning on Travis")
+        status = run_answer_test_cloud()
+        sys.exit(status)
+    print("Runnning Jenkins")
+    # # multiprocessing.log_to_stderr(logging.DEBUG)
+    # tasks = multiprocessing.JoinableQueue()
+    # results = multiprocessing.Queue()
+    #
+    # num_consumers = int(os.environ.get('NUM_WORKERS', 6))
+    # consumers = [NoseWorker(tasks, results) for i in range(num_consumers)]
+    # for w in consumers:
+    #     w.start()
+    #
+    # num_jobs = 0
+    # for job in generate_tasks_input():
+    #     if job[1]:
+    #         num_consumers -= 1  # take into account exclusive jobs
+    #     tasks.put(NoseTask(job))
+    #     num_jobs += 1
+    #
+    # for i in range(num_consumers):
+    #     tasks.put(None)
+    #
+    # tasks.join()
 
-    num_consumers = int(os.environ.get('NUM_WORKERS', 6))
-    consumers = [NoseWorker(tasks, results) for i in range(num_consumers)]
-    for w in consumers:
-        w.start()
-
-    num_jobs = 0
-    for job in generate_tasks_input(sys.argv[1]):
-        if job[1]:
-            num_consumers -= 1  # take into account exclusive jobs
-        tasks.put(NoseTask(job))
-        num_jobs += 1
-
-    for i in range(num_consumers):
-        tasks.put(None)
-
-    tasks.join()
-
-    while num_jobs:
-        result = results.get()
-        num_jobs -= 1
+    # while num_jobs:
+    #     result = results.get()
+    #     num_jobs -= 1

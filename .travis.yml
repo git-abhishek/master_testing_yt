@@ -23,6 +23,9 @@ env:
     FLAKE8=flake8
     CODECOV=codecov
     COVERAGE=coverage
+    PANDAS=pandas
+    MOCK=mock
+    NOSETIMER=nose-timer
     YAML=pyyaml
 
 before_install:
@@ -51,9 +54,11 @@ install:
     pip install --upgrade wheel
     pip install --upgrade setuptools
     # Install dependencies
-    pip install mock $NUMPY $SCIPY $H5PY $CYTHON $MATPLOTLIB $SYMPY $FASTCACHE $IPYTHON $FLAKE8 $CODECOV $COVERAGE $YAML nose nose-timer
+    pip install $MOCK $NUMPY $SCIPY $H5PY $CYTHON $MATPLOTLIB $SYMPY $FASTCACHE $IPYTHON $FLAKE8 $CODECOV $COVERAGE $PANDAS $YAML $NOSE $NOSETIMER
     # install yt
-    pip install -e .
+    if [[ $TRAVIS_BUILD_STAGE_NAME != "Lint" ]]; then
+      pip install -e .
+    fi
 
 jobs:
   include:
@@ -61,36 +66,28 @@ jobs:
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
       script:
-      - pwd
-      - ls
       - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
-      - python tests/nose_runner.py 'travis'
+      - coverage run -a tests/nose_runner.py -r
 
     - stage: tests
       python: 2.7
       env: FLAKE8=
       script:
-      - python tests/nose_runner.py 'travis'
-
-    - stage: tests
-      python: 3.4
-      env: FLAKE8=
-      script:
-      - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt
-      - python tests/nose_runner.py 'travis'
+      - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
+      - coverage run -a tests/nose_runner.py -r
 
     - stage: tests
       python: 3.5
       env: FLAKE8=
       script:
       - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
-      - python tests/nose_runner.py 'travis'
+      - coverage run -a tests/nose_runner.py -r
 
     - stage: tests
       python: 3.6
       env: FLAKE8=
       script:
-      - python tests/nose_runner.py 'travis'
+      - coverage run -a tests/nose_runner.py -r
 
     - stage: tests
       os: osx
@@ -104,7 +101,10 @@ jobs:
           - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
       script:
       - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt
-      - python tests/nose_runner.py 'travis'
+      - coverage run -a tests/nose_runner.py -r
 
 after_success:
-  - codecov
+  - |
+    if [[ $TRAVIS_BUILD_STAGE_NAME != "Lint" ]]; then
+      codecov
+    fi
