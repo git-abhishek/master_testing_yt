@@ -67,28 +67,34 @@ jobs:
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
       script:
       - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
-      - coverage run -a tests/nose_runner.py -r
+      - python tests/nose_runner.py -r
 
     - stage: tests
       python: 2.7
       env: FLAKE8=
       script:
       - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
-      - coverage run -a tests/nose_runner.py -r
+      - python tests/nose_runner.py -r
 
     - stage: tests
       python: 3.5
       env: FLAKE8=
       script:
-      - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
-      - coverage run -a tests/nose_runner.py -r
+      - coverage run $(which nosetests) --with-answer-testing --nologcapture -d -v --local --local-dir=answer-store --answer-store --answer-name=answers_line_plot yt/visualization/tests/test_line_plots.py:test_line_plot
+      - coverage run $(which nosetests) --with-answer-testing --nologcapture -d -v --local --local-dir=answer-store --answer-store --answer-name=answers_multi_line_plot yt/visualization/tests/test_line_plots.py:test_multi_line_plot
+      - python tests/nose_runner.py -r
 
     - stage: tests
       python: 3.6
       env: FLAKE8=
       script:
-      - coverage run -a tests/nose_runner.py -r
+      - coverage run $(which nosetests) --with-answer-testing --nologcapture -d -v --local --local-dir=answer-store --answer-store --answer-name=answers_line_plot yt/visualization/tests/test_line_plots.py:test_line_plot
+      - coverage run $(which nosetests) --with-answer-testing --nologcapture -d -v --local --local-dir=answer-store --answer-store --answer-name=answers_multi_line_plot yt/visualization/tests/test_line_plots.py:test_multi_line_plot
+      - coverage run $(which nosetests) --with-answer-testing --nologcapture -d -v --local --local-dir=answer-store --answer-name=answers_line_plot yt/visualization/tests/test_line_plots.py:test_line_plot
+      - coverage run $(which nosetests) --with-answer-testing --nologcapture -d -v --local --local-dir=answer-store --answer-name=answers_multi_line_plot yt/visualization/tests/test_line_plots.py:test_multi_line_plot
+      - python tests/nose_runner.py -r
 
+ 
     - stage: tests
       os: osx
       osx_image: xcode7.3
@@ -101,7 +107,7 @@ jobs:
           - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
       script:
       - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt
-      - coverage run -a tests/nose_runner.py -r
+      - python tests/nose_runner.py -r
 
 after_success:
   - |

@@ -98,15 +98,17 @@ def generate_tasks_input():
     return args
 
 def generate_cloud_answer_tasks():
-    answers_dir = "answer-store"
+    answers_dir = os.path.join("answer-store")
     test_file = os.path.join("tests", "cloud_answer_tests.yaml")
     with open(test_file, 'r') as obj:
         lines = obj.read()
     data = '\n'.join([line for line in lines.split('\n')])
     tests = yaml.load(data)
 
-    base_argv = ['--with-answer-testing', '--nologcapture',
+    base_argv = ['coverage', 'run', '$(which nosetests)', '--with-answer-testing', '--nologcapture',
                  '-d', '-v', '--local', '--local-dir=%s' % answers_dir]
+    # base_argv = ['coverage', 'run','nosetests', '--with-answer-testing', '--nologcapture',
+    #              '-d', '-v', '--local', '--local-dir=%s' % answers_dir]                 
     args = []
 
     for answer in list(tests["answer_tests"].keys()):
@@ -123,11 +125,25 @@ def generate_cloud_answer_tasks():
 def run_answer_test_cloud():
     # 0 on success and 1 on failure
     status = 0
+    import subprocess
+    import os
+    print("-----------------------------------------------------------------------")
+    BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+    print("BASE_DIR:", BASE_DIR)
+    print("-----------------------------------------------------------------------")
+    res = subprocess.check_output(['ls', '-ltr'])
+    for r in res.splitlines():
+        print(r)
+    print("********************************************************************")
     for job in generate_cloud_answer_tasks():
+
         print("Running Job:", job)
-        result = nose.run(argv=job, addplugins=[AnswerTesting()], exit=False)
-        print("Status:", result)
-        status = result or status
+        result = subprocess.call(' '.join(job), shell=True)
+        print("Output of job: ------> \n", result)
+        print("********************************************************************")
+        
+        # status = result or status
+        # print("Status:", result)
     # upload images if any of the answer tests failed
     return status
 
