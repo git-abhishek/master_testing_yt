@@ -105,7 +105,7 @@ def generate_cloud_answer_tasks():
     data = '\n'.join([line for line in lines.split('\n')])
     tests = yaml.load(data)
 
-    base_argv = ['--with-answer-testing', '--with-timer', '--nologcapture',
+    base_argv = ['--with-answer-testing', '--nologcapture',
                  '-d', '-v', '--local', '--local-dir=%s' % answers_dir]
     args = []
 
@@ -126,6 +126,7 @@ def run_answer_test_cloud():
     for job in generate_cloud_answer_tasks():
         print("Running Job:", job)
         result = nose.run(argv=job, addplugins=[AnswerTesting()], exit=False)
+        print("Status:", result)
         status = result or status
     # upload images if any of the answer tests failed
     return status
