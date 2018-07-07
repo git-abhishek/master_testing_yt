@@ -74,6 +74,13 @@ def test_line_buffer():
     assert_equal(set(lb.keys()), set(['density', 'velocity_x']))
     del lb['velocity_x']
     assert_equal(set(lb.keys()), set(['density']))
+    import os
+    print("***************************************")
+    print("OS VARs:")
+    for k in os.environ:
+        print(k, os.environ[k])
+    
+    print("***************************************")
 
 def test_validate_point():
     ds = fake_random_ds(3)
