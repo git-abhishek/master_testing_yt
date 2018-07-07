@@ -7,8 +7,17 @@ environment:
       PYTHON: "C:\\Miniconda36-x64"
 
   matrix:
-      - PYTHON_VERSION: "2.7"
       - PYTHON_VERSION: "3.6"
+      - PYTHON_VERSION: "2.7"
+
+  APPVEYOR: true
+  APPVEYOR_CLOUDINARY_NAME:
+    secure: dp56jJ9SBNJ4BxxZvIhXCA==
+  APPVEYOR_CLOUDINARY_API_KEY:
+    secure: /50oWcIu2obOklQ4SLyKDg==
+  APPVEYOR_CLOUDINARY_API_SECRET:
+    secure: /0ksxQKYNGPwCRazEKEMemGdYVPYYq506CrYRl7x7H8=
+    
 
 platform:
     -x64
@@ -29,13 +38,15 @@ install:
     - "python --version"
 
     # Install specified version of numpy and dependencies
-    - "conda install --yes -c conda-forge numpy scipy nose setuptools ipython Cython sympy fastcache h5py matplotlib mock"
+    - "conda install --yes -c conda-forge numpy scipy nose setuptools ipython Cython sympy fastcache h5py matplotlib mock coverage nose-timer pyyaml"
     - "pip install -e ."
+    - "pip install cloudinary"
 
 # Not a .NET project
 build: false
 
 test_script:
+  # - "coverage run -a tests/nose_runner.py -r"
   - "nosetests --nologcapture -sv yt"
 
 # Enable this to be able to login to the build worker. You can use the
