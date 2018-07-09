@@ -111,6 +111,18 @@ def generate_tasks_input():
     return args
 
 def generate_cloud_answer_tasks():
+    """Generates the answer test commands
+
+    This function reads the file tests/cloud_answer_tests.yaml and generates
+    commands for each of the tests listed in the file.
+
+    Returns
+    -------
+    list of list of string
+        The inner list of string specifies the full command parameters that
+        need to be executed for a given answer test
+
+    """
     pyver = "py{}{}".format(sys.version_info.major, sys.version_info.minor)
     if sys.version_info < (3, 0, 0):
         DROP_TAG = "py3"
@@ -140,6 +152,25 @@ def generate_cloud_answer_tasks():
 
 
 def generate_webpage(failed_answers):
+    """Generates  html for the failed answer tests
+
+    This function creates a html and embeds the images (actual, expected,
+    difference) in it for the failed answers.
+
+    Parameters
+    ----------
+    failed_answers : list of tuples (string, dict)
+        Collection of tuples where the first part is a string denoting the
+        test name, the second part is a dictionary that stores the actual,
+        expected and difference plot file locations of the test.
+
+    Returns
+    -------
+    string
+        a html page
+
+    """
+
     html_template = """<html><head>
     <style media="screen" type="text/css">
     img{{
@@ -170,9 +201,6 @@ def generate_webpage(failed_answers):
     table_template = """<table>{rows}</table>"""
     rows = []
 
-    table_template = """<table>{rows}</table>"""
-    rows = []
-
     for test_name, images in failed_answers:
         encoded_images = {}
         for key in images:
@@ -191,6 +219,14 @@ def generate_webpage(failed_answers):
     return html
 
 def load_cloudinary_config():
+    """Set the configuarion parameters of cloudinary upload service
+
+    This function picks the cloudinary api key and secret from the environment.
+    It picks the value from environment variables of Travis or Appveyor if
+    running on Travis/Appveyor. If running locally on an user machine, it picks
+    the configuration from user's yt config file.
+
+    """
     config = {}
     if "TRAVIS" in os.environ:
         config["cloud_name"] = os.environ["TRAVIS_CLOUDINARY_NAME"]
@@ -214,6 +250,31 @@ def load_cloudinary_config():
     )
 
 def upload_to_cloudinary(filename, subdir=""):
+    """Uploads file to cloudinary cloud service
+
+    Uploads the file specified by `filename` to cloudinary at the location
+    yt/{current-date}/{subdir}
+
+    Parameters
+    ----------
+    filename : string
+        Path of the file to be uploaded
+
+    subdir : string
+        string specifying a directory name under which the file gets uploaded.
+        If nothing is specified, the parent directory will be yt/{current-date}.
+        The directory structure is as follows:
+        .
+        +-- yt
+        |   +-- current-date
+        |   |   +-- subdir
+
+    Returns
+    -------
+    json
+        Response returned by cloudinary
+
+    """
     if cloudinary.config().cloud_name is None:
         load_cloudinary_config()
 
@@ -229,8 +290,26 @@ def upload_to_cloudinary(filename, subdir=""):
     return response
 
 def upload_failed_answers(failed_answers):
+    """Uploads the result of failed answer tests
+
+    Uploads a html page of the failed answer tests.
+
+    Parameters
+    ----------
+    failed_answers : list of tuples (string, dict)
+        Collection of tuples where the first part is a string denoting the
+        test name, the second part is a dictionary that stores the actual,
+        expected and difference plot file locations of the test.
+
+    Returns
+    -------
+    json
+        Response as returned by the upload service
+
+    """
     html = generate_webpage(failed_answers)
 
+    # save the html page to a temporary directory
     tmpdir = tempfile.mkdtemp()
     filename = os.path.join(tmpdir, "index.html")
     with open(filename, "w") as outfile:
@@ -241,15 +320,35 @@ def upload_failed_answers(failed_answers):
     return response
 
 def generate_missing_answers(answer_dir, missing_answers):
+    """Generate golden-answers
+
+    Generates golden-answers for the list of answers in `missing_answers` and
+    saves them at `answer_dir`.
+
+    Parameters
+    ----------
+    answer_dir : string
+        directory location to save the generated answers
+
+    missing_answers : list of list of string
+        Collection of missing answer tests, where the inner list of string
+        specifies the full command line parameters to be executed for a given
+        answer test.
+
+    Returns
+    -------
+    bool
+        True, if all the missing answers are successfully generated
+        False, otherwise
+
+    """
     status = True
     for job in missing_answers:
         try:
+            print("Generating answers for", job[-1], end=" ")
             new_job = job[:6]
             new_job += ['--local-dir=%s' % answer_dir, '--answer-store']
             new_job += job[-2:]
-            print("Generating answers for", job[-1], end=" ")
-            print(new_job)
-            sys.stdout.flush()
             subprocess.check_output(' '.join(new_job), stderr=subprocess.STDOUT,
                                     universal_newlines=True, shell=True)
             print("... ok")
@@ -261,6 +360,27 @@ def generate_missing_answers(answer_dir, missing_answers):
     return status
 
 def upload_missing_answers(missing_answers):
+    """Uploads answers not present in answer-store
+
+    This function generates the answers for tests that are not present in
+    answer store and uploads a zip file of the same.
+
+    Parameters
+    ----------
+    missing_answers : list of list of string
+        Collection of missing answer tests, where the inner list of string
+        specifies the full command line parameters to be executed for a given
+        answer test.
+
+    Returns
+    -------
+    json
+        for the case when answers are successfully uploaded
+    None
+        for the case when there was some error while generating the missing
+        golden-answers
+
+    """
     tmpdir = tempfile.mkdtemp()
     answer_dir = os.path.join(tmpdir, "answer-store")
     zip_file = os.path.join(tmpdir, "new-answers")
@@ -273,20 +393,35 @@ def upload_missing_answers(missing_answers):
     return None
 
 def run_answer_test_cloud():
+    """Run answer tests on cloud platform like Travis, Appveyor
+
+    This function execute yt answer tests on cloud platform. In case, answer
+    store does not has golden-answer, it uploads the missing answers and fails
+    the test execution finally by returning status 1. If the test fail due to
+    difference in actual and expected images, this function uploads a html page
+    having all the plots which got failed.
+
+    Returns
+    -------
+    int
+        0, if all the answer tests runs successfully
+        1, otherwise
+
+    """
     # 0 on success and 1 on failure
     status = 0
     failed_answers = []
     missing_answers = []
     for job in generate_cloud_answer_tasks():
+        # check if golden answer exits?
         answer_name = job[-2].split("=")[1]
         answer_dir = os.path.join(ANSWER_DIR, answer_name)
         if not os.path.exists(answer_dir):
             missing_answers.append(job)
             continue
         try:
-            print("Running answer tests...")
+            # execute the nosetests command
             print(job[-1], end=" ")
-            sys.stdout.flush()
             result = subprocess.check_output(' '.join(job), stderr=subprocess.STDOUT,
                                              universal_newlines=True, shell=True)
             time_regex = r"Ran 1 test in (\d*.\d*s)"
@@ -310,12 +445,13 @@ def run_answer_test_cloud():
                     print(e.output)
                     status = 1
                     break
+                # store the locations of actual, expected and diff plot files
                 img_path[key] = result.group(1)
             if not unknown_failure:
                 print("F")
                 failed_answers.append((job[-1], img_path))
 
-    # upload images if any, of the failed answer tests
+    # upload plot differences of the failed answer tests
     if failed_answers:
         status = 1
         response = upload_failed_answers(failed_answers)
@@ -323,6 +459,7 @@ def run_answer_test_cloud():
         print("  secure url:", response["secure_url"])
         print("  url:", response["url"])
 
+    # upload missing answers, if any
     if missing_answers:
         status = 1
         response = upload_missing_answers(missing_answers)
