@@ -130,13 +130,14 @@ def generate_cloud_answer_tasks():
         DROP_TAG = "py2"
 
     test_file = os.path.join("tests", "cloud_answer_tests.yaml")
+
     with open(test_file, 'r') as obj:
         lines = obj.read()
     data = '\n'.join([line for line in lines.split('\n')
                       if DROP_TAG not in line])
     tests = yaml.load(data)
 
-    base_argv = ['nosetests', '--with-answer-testing', '--nologcapture',
+    base_argv = ['coverage', 'run', '-a', '$(which nosetests)', '--with-answer-testing', '--nologcapture',
                  '-d', '-v', '--local', '--local-dir=%s' % ANSWER_DIR]
     args = []
     for answer in list(tests["answer_tests"]):
@@ -343,12 +344,14 @@ def generate_missing_answers(answer_dir, missing_answers):
 
     """
     status = True
+    base_argv = ['nosetests', '--with-answer-testing', '--nologcapture',
+                 '-d', '-v', '--local', '--local-dir=%s' % answer_dir, '--answer-store']
     for job in missing_answers:
         try:
             print("Generating answers for", job[-1], end=" ")
-            new_job = job[:6]
-            new_job += ['--local-dir=%s' % answer_dir, '--answer-store']
-            new_job += job[-2:]
+            new_job = []
+            new_job += base_argv
+            new_job += job
             subprocess.check_output(' '.join(new_job), stderr=subprocess.STDOUT,
                                     universal_newlines=True, shell=True)
             print("... ok")
@@ -417,7 +420,7 @@ def run_answer_test_cloud():
         answer_name = job[-2].split("=")[1]
         answer_dir = os.path.join(ANSWER_DIR, answer_name)
         if not os.path.exists(answer_dir):
-            missing_answers.append(job)
+            missing_answers.append(job[-2:])
             continue
         try:
             # execute the nosetests command
