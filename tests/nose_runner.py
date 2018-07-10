@@ -443,19 +443,27 @@ def run_answer_test_cloud():
                 print("F")
                 failed_answers.append((job[-1], img_path))
 
+    bright_mageneta = "\033[35;1m"
+    reset_color = "\033[0m"
     # upload plot differences of the failed answer tests
     if failed_answers:
         status = 1
         response = upload_failed_answers(failed_answers)
         if response.ok:
-            print("\nSuccessfully uploaded failed answer tests.", response.text)
+            msg = bright_mageneta
+            msg += "\nSuccessfully uploaded failed answer tests."
+            msg += response.text + reset_color
+            print(msg)
 
     # upload missing answers, if any
     if missing_answers:
         status = 1
         response = upload_missing_answers(missing_answers)
         if response.ok:
-            print("\nSuccessfully uploaded missing answer tests.", response.text)
+            msg = bright_mageneta
+            msg += "\nSuccessfully uploaded missing answer tests."
+            msg += response.text + reset_color
+            print(msg)
 
     return status
 
