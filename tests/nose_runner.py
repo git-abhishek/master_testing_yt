@@ -16,6 +16,7 @@ import cloudinary.uploader
 import nose
 import numpy
 import yaml
+from yt.utilities.command_line import FileStreamer
 
 from yt.config import ytcfg
 from yt.extern.six import StringIO
@@ -250,8 +251,8 @@ def load_cloudinary_config():
         api_secret=config["api_secret"]
     )
 
-def upload_to_cloudinary(filename, subdir=""):
-    """Uploads file to cloudinary cloud service
+def upload_to_curldrop(data, filename):
+    """Uploads file to yt's curldrop server
 
     Uploads the file specified by `filename` to cloudinary at the location
     yt/{current-date}/{subdir}
@@ -276,18 +277,8 @@ def upload_to_cloudinary(filename, subdir=""):
         Response returned by cloudinary
 
     """
-    if cloudinary.config().cloud_name is None:
-        load_cloudinary_config()
-
-    # Create a folder with current date
-    date = datetime.datetime.now().strftime("%Y-%m-%d")
-    folder = "yt/{}/{}".format(date, subdir)
-    if '\\' in filename:
-        filename = filename.replace("\\", "/")
-    response = cloudinary.uploader.upload(filename,
-                                          folder=folder,
-                                          use_filename=True,
-                                          resource_type="auto")
+    upload_url = ytcfg.get("yt", "curldrop_upload_url")
+    response = requests.put(upload_url + "/" + os.path.basename(filename), data=data)
     return response
 
 def upload_failed_answers(failed_answers):
@@ -309,15 +300,10 @@ def upload_failed_answers(failed_answers):
 
     """
     html = generate_webpage(failed_answers)
-
-    # save the html page to a temporary directory
-    tmpdir = tempfile.mkdtemp()
-    filename = os.path.join(tmpdir, "index.html")
-    with open(filename, "w") as outfile:
-        outfile.write(html)
-
-    response = upload_to_cloudinary(filename)
-    shutil.rmtree(tmpdir)
+    html = html.encode()
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = "failed_answers_{}.html".format(timestamp)
+    response = upload_to_curldrop(data=html, filename=filename)
     return response
 
 def generate_missing_answers(answer_dir, missing_answers):
@@ -389,8 +375,11 @@ def upload_missing_answers(missing_answers):
     zip_file = os.path.join(tmpdir, "new-answers")
     status = generate_missing_answers(answer_dir, missing_answers)
     if status:
-        filename = shutil.make_archive(zip_file, 'zip', answer_dir)
-        response = upload_to_cloudinary(filename, subdir="answers")
+        zip_file = shutil.make_archive(zip_file, 'zip', answer_dir)
+        data = iter(FileStreamer(open(zip_file, 'r')))
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = "new_answers_{}.zip".format(timestamp)
+        response = upload_to_curldrop(data=data, filename=filename)
         shutil.rmtree(tmpdir)
         return response
     return None
@@ -458,22 +447,20 @@ def run_answer_test_cloud():
     if failed_answers:
         status = 1
         response = upload_failed_answers(failed_answers)
-        print("\nUploaded the failed answer tests result at following urls:")
-        print("  secure url:", response["secure_url"])
-        print("  url:", response["url"])
+        if response.ok:
+            print("\nSuccessfully uploaded failed answer tests.", response.text)
 
     # upload missing answers, if any
     if missing_answers:
         status = 1
         response = upload_missing_answers(missing_answers)
-        if response is not None:
-            print("\nUploaded missing answer tests at following urls:")
-            print("  secure url:", response["secure_url"])
-            print("  url:", response["url"])
+        if response.ok:
+            print("\nSuccessfully uploaded missing answer tests.", response.text)
 
     return status
 
 if __name__ == "__main__":
+    import requests
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--runAnswerTestOnCloud", action="store_true",
                         help="Run answer tests on cloud platforms like Travis, "
