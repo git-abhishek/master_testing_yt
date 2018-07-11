@@ -376,7 +376,7 @@ def upload_missing_answers(missing_answers):
     status = generate_missing_answers(answer_dir, missing_answers)
     if status:
         zip_file = shutil.make_archive(zip_file, 'zip', answer_dir)
-        data = iter(FileStreamer(open(zip_file, 'r')))
+        data = iter(FileStreamer(open(zip_file, 'rb')))
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         filename = "new_answers_{}.zip".format(timestamp)
         response = upload_to_curldrop(data=data, filename=filename)
@@ -443,8 +443,8 @@ def run_answer_test_cloud():
                 print("F")
                 failed_answers.append((job[-1], img_path))
 
-    bright_mageneta = "\033[35;1m"
-    reset_color = "\033[0m"
+    bright_mageneta = "\e[35;1m"
+    reset_color = "\e[0m"
     # upload plot differences of the failed answer tests
     if failed_answers:
         status = 1
