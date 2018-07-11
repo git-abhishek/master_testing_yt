@@ -1,31 +1,29 @@
 from __future__ import print_function
 
+import sys
+import os
+import yaml
+import multiprocessing
+import nose
+from yt.extern.six import StringIO
+from yt.config import ytcfg
+from yt.utilities.answer_testing.framework import AnswerTesting
+import numpy
+
 import argparse
 import base64
 import datetime
-import multiprocessing
-import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 
-import cloudinary
-import cloudinary.uploader
-import nose
-import numpy
-import yaml
+import requests
 from yt.utilities.command_line import FileStreamer
-
-from yt.config import ytcfg
-from yt.extern.six import StringIO
-from yt.utilities.answer_testing.framework import AnswerTesting
-from yt.utilities.exceptions import YTException
 
 numpy.set_printoptions(threshold=5, edgeitems=1, precision=4)
 
-ANSWER_DIR = os.path.join("answer-store")
+ANSWER_STORE = "answer-store"
 
 class NoseWorker(multiprocessing.Process):
 
@@ -131,15 +129,15 @@ def generate_cloud_answer_tasks():
         DROP_TAG = "py2"
 
     test_file = os.path.join("tests", "cloud_answer_tests.yaml")
-
     with open(test_file, 'r') as obj:
         lines = obj.read()
     data = '\n'.join([line for line in lines.split('\n')
                       if DROP_TAG not in line])
     tests = yaml.load(data)
 
-    base_argv = ['coverage', 'run', '-a', '$(which nosetests)', '--with-answer-testing', '--nologcapture',
-                 '-d', '-v', '--local', '--local-dir=%s' % ANSWER_DIR]
+    base_argv = ['coverage', 'run', '-a', '$(which nosetests)',
+                 '--with-answer-testing', '--nologcapture',
+                 '-d', '-v', '--local', '--local-dir=%s' % ANSWER_STORE]
     args = []
     for answer in list(tests["answer_tests"]):
         if tests["answer_tests"][answer] is None:
@@ -154,7 +152,7 @@ def generate_cloud_answer_tasks():
 
 
 def generate_webpage(failed_answers):
-    """Generates  html for the failed answer tests
+    """Generates html for the failed answer tests
 
     This function creates a html and embeds the images (actual, expected,
     difference) in it for the failed answers.
@@ -220,65 +218,28 @@ def generate_webpage(failed_answers):
     html = html_template.format(header="Failed Answer Tests", body=body)
     return html
 
-def load_cloudinary_config():
-    """Set the configuarion parameters of cloudinary upload service
-
-    This function picks the cloudinary api key and secret from the environment.
-    It picks the value from environment variables of Travis or Appveyor if
-    running on Travis/Appveyor. If running locally on an user machine, it picks
-    the configuration from user's yt config file.
-
-    """
-    config = {}
-    if "TRAVIS" in os.environ:
-        config["cloud_name"] = os.environ["TRAVIS_CLOUDINARY_NAME"]
-        config["api_key"] = os.environ["TRAVIS_CLOUDINARY_API_KEY"]
-        config["api_secret"] = os.environ["TRAVIS_CLOUDINARY_API_SECRET"]
-    elif "APPVEYOR" in os.environ:
-        config["cloud_name"] = os.environ["APPVEYOR_CLOUDINARY_NAME"]
-        config["api_key"] = os.environ["APPVEYOR_CLOUDINARY_API_KEY"]
-        config["api_secret"] = os.environ["APPVEYOR_CLOUDINARY_API_SECRET"]
-    elif ytcfg.has_option("yt", "cloudinary_name"):
-        config["cloud_name"] = ytcfg.get("yt", "cloudinary_name")
-        config["api_key"] = ytcfg.get("yt", "cloudinary_api_key")
-        config["api_secret"] = ytcfg.get("yt", "cloudinary_api_secret")
-    else:
-        raise YTException("Unable to retrieve Cloudinary API details from the "
-                          "environment ({Travis, AppVeyor, ~/.config/yt/ytrc}).")
-    cloudinary.config(
-        cloud_name=config["cloud_name"],
-        api_key=config["api_key"],
-        api_secret=config["api_secret"]
-    )
-
 def upload_to_curldrop(data, filename):
     """Uploads file to yt's curldrop server
 
-    Uploads the file specified by `filename` to cloudinary at the location
-    yt/{current-date}/{subdir}
+    Uploads bytes `data` by the name `filename` to yt curldrop server.
 
     Parameters
     ----------
-    filename : string
-        Path of the file to be uploaded
+    data : bytes
+        Content to be uploaded
 
-    subdir : string
-        string specifying a directory name under which the file gets uploaded.
-        If nothing is specified, the parent directory will be yt/{current-date}.
-        The directory structure is as follows:
-        .
-        +-- yt
-        |   +-- current-date
-        |   |   +-- subdir
+    filename : string
+        Name of file at curldrop's upload server
 
     Returns
     -------
-    json
-        Response returned by cloudinary
+    requests.models.Response
+        Response returned by curldrop server
 
     """
-    upload_url = ytcfg.get("yt", "curldrop_upload_url")
-    response = requests.put(upload_url + "/" + os.path.basename(filename), data=data)
+    base_url = ytcfg.get("yt", "curldrop_upload_url")
+    upload_url = base_url + "/" + os.path.basename(filename)
+    response = requests.put(upload_url, data=data)
     return response
 
 def upload_failed_answers(failed_answers):
@@ -295,14 +256,16 @@ def upload_failed_answers(failed_answers):
 
     Returns
     -------
-    json
+    requests.models.Response
         Response as returned by the upload service
 
     """
     html = generate_webpage(failed_answers)
+    # convert html str to bytes
     html = html.encode()
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = "failed_answers_{}.html".format(timestamp)
+
     response = upload_to_curldrop(data=html, filename=filename)
     return response
 
@@ -319,8 +282,10 @@ def generate_missing_answers(answer_dir, missing_answers):
 
     missing_answers : list of list of string
         Collection of missing answer tests, where the inner list of string
-        specifies the full command line parameters to be executed for a given
-        answer test.
+        specifies the user given name of the answer test and the corresponding
+        test function.
+        eg. [['--answer-name=answers_multi_line_plot',
+         'yt/visualization/tests/test_line_plots.py:test_multi_line_plot']]
 
     Returns
     -------
@@ -331,7 +296,8 @@ def generate_missing_answers(answer_dir, missing_answers):
     """
     status = True
     base_argv = ['nosetests', '--with-answer-testing', '--nologcapture',
-                 '-d', '-v', '--local', '--local-dir=%s' % answer_dir, '--answer-store']
+                 '-d', '-v', '--local', '--local-dir=%s' % answer_dir,
+                 '--answer-store']
     for job in missing_answers:
         try:
             print("Generating answers for", job[-1], end=" ")
@@ -358,13 +324,17 @@ def upload_missing_answers(missing_answers):
     ----------
     missing_answers : list of list of string
         Collection of missing answer tests, where the inner list of string
-        specifies the full command line parameters to be executed for a given
-        answer test.
+        specifies the user given name of the answer test and the corresponding
+        test function.
+        eg. [['--answer-name=answers_multi_line_plot',
+         'yt/visualization/tests/test_line_plots.py:test_multi_line_plot']]
 
     Returns
     -------
-    json
-        for the case when answers are successfully uploaded
+    requests.models.Response
+        Response as returned by the upload service when answers are
+        successfully uploaded
+
     None
         for the case when there was some error while generating the missing
         golden-answers
@@ -373,6 +343,7 @@ def upload_missing_answers(missing_answers):
     tmpdir = tempfile.mkdtemp()
     answer_dir = os.path.join(tmpdir, "answer-store")
     zip_file = os.path.join(tmpdir, "new-answers")
+
     status = generate_missing_answers(answer_dir, missing_answers)
     if status:
         zip_file = shutil.make_archive(zip_file, 'zip', answer_dir)
@@ -407,7 +378,7 @@ def run_answer_test_cloud():
     for job in generate_cloud_answer_tasks():
         # check if golden answer exits?
         answer_name = job[-2].split("=")[1]
-        answer_dir = os.path.join(ANSWER_DIR, answer_name)
+        answer_dir = os.path.join(ANSWER_STORE, answer_name)
         if not os.path.exists(answer_dir):
             missing_answers.append(job[-2:])
             continue
@@ -443,32 +414,25 @@ def run_answer_test_cloud():
                 print("F")
                 failed_answers.append((job[-1], img_path))
 
-    bright_mageneta = "\e[35;1m"
-    reset_color = "\e[0m"
     # upload plot differences of the failed answer tests
     if failed_answers:
         status = 1
         response = upload_failed_answers(failed_answers)
         if response.ok:
-            msg = bright_mageneta
-            msg += "\nSuccessfully uploaded failed answer tests."
-            msg += response.text + reset_color
-            print(msg)
+            print("\nSuccessfully uploaded failed answer tests result:")
+            print("  ", response.text)
 
     # upload missing answers, if any
     if missing_answers:
         status = 1
         response = upload_missing_answers(missing_answers)
         if response.ok:
-            msg = bright_mageneta
-            msg += "\nSuccessfully uploaded missing answer tests."
-            msg += response.text + reset_color
-            print(msg)
+            print("\nSuccessfully uploaded missing answer tests:")
+            print("  ", response.text)
 
     return status
 
 if __name__ == "__main__":
-    import requests
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--runAnswerTestOnCloud", action="store_true",
                         help="Run answer tests on cloud platforms like Travis, "

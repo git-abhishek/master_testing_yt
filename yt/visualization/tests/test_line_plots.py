@@ -43,9 +43,9 @@ def test_line_plot():
                        field_labels=field_labels)
     plot.annotate_legend(fields[0])
     plot.annotate_legend(fields[1])
-    plot.set_x_unit('cm')
+    plot.set_x_unit('m')
     plot.set_unit(fields[0], 'kg/cm**3')
-    plot.annotate_title(fields[0], "Density Plot")
+    plot.annotate_title(fields[0], "Density Plots")
     yield compare(ds, plot, "answers_line_plot")
 
 @attr("answer_test")
