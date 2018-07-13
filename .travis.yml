@@ -68,7 +68,8 @@ jobs:
       H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
     script:
     - python tests/nose_runner.py -r
-    - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
+    - coverage report
+#    - coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg yt/visualization/tests/test_line_plots.py
   - stage: tests
     python: 2.7
     env: FLAKE8=
@@ -100,6 +101,7 @@ jobs:
     # - coverage run $(which nosetests) --with-answer-testing --nologcapture -d -v --local
     #   --local-dir=answer-store --answer-name=answers_multi_line_plot yt/visualization/tests/test_line_plots.py:test_multi_line_plot
     - python tests/nose_runner.py -r
+    - coverage report
   - stage: tests
     os: osx
     osx_image: xcode7.3

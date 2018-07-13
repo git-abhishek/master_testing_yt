@@ -5,6 +5,8 @@ import os
 import yaml
 import multiprocessing
 import nose
+from coverage import Coverage
+
 from yt.extern.six import StringIO
 from yt.config import ytcfg
 from yt.utilities.answer_testing.framework import AnswerTesting
@@ -19,8 +21,6 @@ import subprocess
 import tempfile
 
 import requests
-from yt.utilities.command_line import FileStreamer
-
 numpy.set_printoptions(threshold=5, edgeitems=1, precision=4)
 
 ANSWER_STORE = "answer-store"
@@ -51,12 +51,14 @@ class NoseWorker(multiprocessing.Process):
 
 class NoseTask(object):
     def __init__(self, job):
-        argv, exclusive = job
+        argv = job
+        exclusive = True
         self.argv = argv
         self.name = argv[0]
         self.exclusive = exclusive
 
     def __call__(self):
+        print("Starting to execute the job...")
         old_stderr = sys.stderr
         sys.stderr = mystderr = StringIO()
         test_dir = ytcfg.get("yt", "test_data_dir")
@@ -69,6 +71,7 @@ class NoseTask(object):
             os.remove("{}.xml".format(self.name))
         nose.run(argv=self.argv, addplugins=[AnswerTesting()], exit=False)
         sys.stderr = old_stderr
+        print("Execution completed")
         return mystderr.getvalue()
 
     def __str__(self):
@@ -84,6 +87,7 @@ def generate_tasks_input():
 
     test_dir = ytcfg.get("yt", "test_data_dir")
     answers_dir = os.path.join(test_dir, "answers")
+    answers_dir = "answer-store"
     with open('tests/tests.yaml', 'r') as obj:
         lines = obj.read()
     data = '\n'.join([line for line in lines.split('\n')
@@ -94,8 +98,8 @@ def generate_tasks_input():
                  '--with-answer-testing', '--answer-big-data', '--local']
     args = []
 
-    for test in list(tests["other_tests"].keys()):
-        args.append(([test] + tests["other_tests"][test], True))
+    # for test in list(tests["other_tests"].keys()):
+    #     args.append(([test] + tests["other_tests"][test], True))
     for answer in list(tests["answer_tests"].keys()):
         if tests["answer_tests"][answer] is None:
             continue
@@ -128,15 +132,14 @@ def generate_cloud_answer_tasks():
     else:
         DROP_TAG = "py2"
 
-    test_file = os.path.join("tests", "cloud_answer_tests.yaml")
+    test_file = os.path.join( "tests", "cloud_answer_tests.yaml")
     with open(test_file, 'r') as obj:
         lines = obj.read()
     data = '\n'.join([line for line in lines.split('\n')
                       if DROP_TAG not in line])
     tests = yaml.load(data)
 
-    base_argv = ['coverage', 'run', '-a', '$(which nosetests)',
-                 '--with-answer-testing', '--nologcapture',
+    base_argv = ['--with-answer-testing', '--nologcapture',
                  '-d', '-v', '--local', '--local-dir=%s' % ANSWER_STORE]
     args = []
     for answer in list(tests["answer_tests"]):
@@ -433,36 +436,45 @@ def run_answer_test_cloud():
     return status
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--runAnswerTestOnCloud", action="store_true",
-                        help="Run answer tests on cloud platforms like Travis, "
-                             "AppVeyor.")
-    args = parser.parse_args()
-    if args.runAnswerTestOnCloud:
-        status = run_answer_test_cloud()
-        sys.exit(status)
+    import yt.utilities.physical_constants as physical_constants
+    from yt import utilities
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("-r", "--runAnswerTestOnCloud", action="store_true",
+    #                     help="Run answer tests on cloud platforms like Travis, "
+    #                          "AppVeyor.")
+    # args = parser.parse_args()
+    # if args.runAnswerTestOnCloud:
+    #     status = run_answer_test_cloud()
+    #     sys.exit(status)
 
+    BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
     # multiprocessing.log_to_stderr(logging.DEBUG)
-    tasks = multiprocessing.JoinableQueue()
-    results = multiprocessing.Queue()
+    #
+    # cov = Coverage(config_file=os.path.join(BASE_DIR, ".coveragerc"),
+    #                concurrency="multiprocessing", branch=True, auto_data=True)
+    cov = Coverage(config_file=os.path.join(BASE_DIR, ".coveragerc"),
+                   branch=True, auto_data=False )
+    cov.start()
 
-    num_consumers = int(os.environ.get('NUM_WORKERS', 6))
-    consumers = [NoseWorker(tasks, results) for i in range(num_consumers)]
-    for w in consumers:
-        w.start()
+    # # multiprocessing.log_to_stderr(logging.DEBUG)
+    # tasks = multiprocessing.JoinableQueue()
+    # results = multiprocessing.Queue()
+    #
+    # num_consumers = int(os.environ.get('NUM_WORKERS', 6))
+    # consumers = [NoseWorker(tasks, results) for i in range(num_consumers)]
+    # for w in consumers:
+    #     w.start()
+    #
+    # num_jobs = 0
+    for job in generate_cloud_answer_tasks():
+        print("Job is :")
+        print(job)
+        task = NoseTask(job)
+        res = task()
+        print(res)
 
-    num_jobs = 0
-    for job in generate_tasks_input():
-        if job[1]:
-            num_consumers -= 1  # take into account exclusive jobs
-        tasks.put(NoseTask(job))
-        num_jobs += 1
-
-    for i in range(num_consumers):
-        tasks.put(None)
-
-    tasks.join()
-
-    while num_jobs:
-        result = results.get()
-        num_jobs -= 1
+    cov.stop()
+    cov.combine()
+    cov.save()
+    cov.xml_report(outfile=os.path.join(BASE_DIR, "coverage.xml"))
+    cov.report()
