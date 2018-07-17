@@ -1,26 +1,31 @@
 from __future__ import print_function
 
-import sys
-import os
-import yaml
-import multiprocessing
-import nose
-from coverage import Coverage
-
-from yt.extern.six import StringIO
-from yt.config import ytcfg
-from yt.utilities.answer_testing.framework import AnswerTesting
-import numpy
-
 import argparse
 import base64
 import datetime
+import multiprocessing
+import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 
+import nose
+import numpy
 import requests
+import yaml
+
+from coverage import Coverage
+cov = Coverage(config_file=".coveragerc", branch=True)
+cov.start()
+
+from yt.config import ytcfg
+from yt.extern.six import StringIO
+from yt.utilities.answer_testing.framework import AnswerTesting
+from yt.utilities.command_line import FileStreamer
+
+
 numpy.set_printoptions(threshold=5, edgeitems=1, precision=4)
 
 ANSWER_STORE = "answer-store"
@@ -51,14 +56,12 @@ class NoseWorker(multiprocessing.Process):
 
 class NoseTask(object):
     def __init__(self, job):
-        argv = job
-        exclusive = True
+        argv, exclusive = job
         self.argv = argv
         self.name = argv[0]
         self.exclusive = exclusive
 
     def __call__(self):
-        print("Starting to execute the job...")
         old_stderr = sys.stderr
         sys.stderr = mystderr = StringIO()
         test_dir = ytcfg.get("yt", "test_data_dir")
@@ -71,7 +74,6 @@ class NoseTask(object):
             os.remove("{}.xml".format(self.name))
         nose.run(argv=self.argv, addplugins=[AnswerTesting()], exit=False)
         sys.stderr = old_stderr
-        print("Execution completed")
         return mystderr.getvalue()
 
     def __str__(self):
@@ -87,7 +89,6 @@ def generate_tasks_input():
 
     test_dir = ytcfg.get("yt", "test_data_dir")
     answers_dir = os.path.join(test_dir, "answers")
-    answers_dir = "answer-store"
     with open('tests/tests.yaml', 'r') as obj:
         lines = obj.read()
     data = '\n'.join([line for line in lines.split('\n')
@@ -98,8 +99,8 @@ def generate_tasks_input():
                  '--with-answer-testing', '--answer-big-data', '--local']
     args = []
 
-    # for test in list(tests["other_tests"].keys()):
-    #     args.append(([test] + tests["other_tests"][test], True))
+    for test in list(tests["other_tests"].keys()):
+        args.append(([test] + tests["other_tests"][test], True))
     for answer in list(tests["answer_tests"].keys()):
         if tests["answer_tests"][answer] is None:
             continue
@@ -132,7 +133,7 @@ def generate_cloud_answer_tasks():
     else:
         DROP_TAG = "py2"
 
-    test_file = os.path.join( "tests", "cloud_answer_tests.yaml")
+    test_file = os.path.join("tests", "cloud_answer_tests.yaml")
     with open(test_file, 'r') as obj:
         lines = obj.read()
     data = '\n'.join([line for line in lines.split('\n')
@@ -152,7 +153,6 @@ def generate_cloud_answer_tasks():
         args.append(argv)
 
     return args
-
 
 def generate_webpage(failed_answers):
     """Generates html for the failed answer tests
@@ -174,16 +174,27 @@ def generate_webpage(failed_answers):
 
     """
 
-    html_template = """<html><head>
+    html_template = """
+    <html><head>
     <style media="screen" type="text/css">
     img{{
       width:100%;
       max-width:800px;
     }}
     </style>
-    <h1>{header}</h1>
+    <h1 style="text-align: center;">Failed Answer Tests</h1>
+    <p>
+      This report shows answer tests that failed when running the answer tests.
+    </p>
+    <p>
+      <strong>Acutal Image:</strong> plot generated while running the test<br/> 
+      <strong>Expected Image:</strong> golden answer image<br/> 
+      <strong>Difference Image:</strong> difference in the "actual" 
+      and "expected" image
+    </p>
+    <hr/>
     </head><body>
-    {body}
+    <table>{rows}</table>
     </body></html>
     """
 
@@ -198,10 +209,9 @@ def generate_webpage(failed_answers):
     <td><img src="data:image/png;base64,{1}"></td>
     <td><img src="data:image/png;base64,{2}"></td>
     </tr>
-    <tr><td align="center" colspan="3"><b>{3}</b><hr></td></tr>
+    <tr><td align="center" colspan="3"><b>Test: {3}</b><hr/></td></tr>
     """
 
-    table_template = """<table>{rows}</table>"""
     rows = []
 
     for test_name, images in failed_answers:
@@ -217,9 +227,9 @@ def generate_webpage(failed_answers):
                                             test_name)
         rows.append(formatted_row)
 
-    body = table_template.format(rows='\n'.join(rows))
-    html = html_template.format(header="Failed Answer Tests", body=body)
+    html = html_template.format(rows='\n'.join(rows))
     return html
+
 
 def upload_to_curldrop(data, filename):
     """Uploads file to yt's curldrop server
@@ -385,37 +395,42 @@ def run_answer_test_cloud():
         if not os.path.exists(answer_dir):
             missing_answers.append(job[-2:])
             continue
-        try:
-            # execute the nosetests command
-            print(job[-1], end=" ")
-            result = subprocess.check_output(' '.join(job), stderr=subprocess.STDOUT,
-                                             universal_newlines=True, shell=True)
-            time_regex = r"Ran 1 test in (\d*.\d*s)"
-            result = re.search(time_regex, result, re.MULTILINE)
-            if result is not None:
-                time = result.group(1)
-                print("... ok [%s]" % time)
-        except subprocess.CalledProcessError as e:
-
-            unknown_failure = False
-            base_regex = r"\s*\n\s*(.*?.png)"
-            img_regex = {"Actual": "Actual:" + base_regex,
-                         "Expected": "Expected:" + base_regex,
-                         "Difference": "Difference:" + base_regex}
-            img_path = {}
-            for key in img_regex:
-                result = re.search(img_regex[key], e.output, re.MULTILINE)
-                if result is None:
-                    unknown_failure = True
-                    print("E")
-                    print(e.output)
-                    status = 1
-                    break
-                # store the locations of actual, expected and diff plot files
-                img_path[key] = result.group(1)
-            if not unknown_failure:
-                print("F")
-                failed_answers.append((job[-1], img_path))
+        # try:
+        # execute the nosetests command
+        print("Running job:", job)
+        print(job[-1], end=" ")
+        old_stderr = sys.stderr
+        sys.stderr = mystderr = StringIO()
+        result = nose.run(argv=job, addplugins=[AnswerTesting()], exit=False)
+        sys.stderr = old_stderr
+        print("\nmystderr.getvalue(): {",mystderr.getvalue(),"}")
+        print("<",result,">","|",type(result),"|")
+            # time_regex = r"Ran 1 test in (\d*.\d*s)"
+            # result = re.search(time_regex, result, re.MULTILINE)
+            # if result is not None:
+            #     time = result.group(1)
+            #     print("... ok [%s]" % time)
+        # except subprocess.CalledProcessError as e:
+        #
+        #     unknown_failure = False
+        #     base_regex = r"\s*\n\s*(.*?.png)"
+        #     img_regex = {"Actual": "Actual:" + base_regex,
+        #                  "Expected": "Expected:" + base_regex,
+        #                  "Difference": "Difference:" + base_regex}
+        #     img_path = {}
+        #     for key in img_regex:
+        #         result = re.search(img_regex[key], e.output, re.MULTILINE)
+        #         if result is None:
+        #             unknown_failure = True
+        #             print("E")
+        #             print(e.output)
+        #             status = 1
+        #             break
+        #         # store the locations of actual, expected and diff plot files
+        #         img_path[key] = result.group(1)
+        #     if not unknown_failure:
+        #         print("F")
+        #         failed_answers.append((job[-1], img_path))
 
     # upload plot differences of the failed answer tests
     if failed_answers:
@@ -430,51 +445,47 @@ def run_answer_test_cloud():
         status = 1
         response = upload_missing_answers(missing_answers)
         if response.ok:
-            print("\nSuccessfully uploaded missing answer tests:")
+            print("\nSuccessfully uploaded missing answer tests, check in "
+                  "these new answers to the repo (answer-store directory):")
             print("  ", response.text)
 
     return status
 
 if __name__ == "__main__":
-    import yt.utilities.physical_constants as physical_constants
-    from yt import utilities
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("-r", "--runAnswerTestOnCloud", action="store_true",
-    #                     help="Run answer tests on cloud platforms like Travis, "
-    #                          "AppVeyor.")
-    # args = parser.parse_args()
-    # if args.runAnswerTestOnCloud:
-    #     status = run_answer_test_cloud()
-    #     sys.exit(status)
+    try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-r", "--runAnswerTestOnCloud", action="store_true",
+                            help="Run answer tests on cloud platforms like "
+                                 "Travis, AppVeyor.")
+        args = parser.parse_args()
+        if args.runAnswerTestOnCloud:
+            status = run_answer_test_cloud()
+            sys.exit(status)
 
-    BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
-    # multiprocessing.log_to_stderr(logging.DEBUG)
-    #
-    # cov = Coverage(config_file=os.path.join(BASE_DIR, ".coveragerc"),
-    #                concurrency="multiprocessing", branch=True, auto_data=True)
-    cov = Coverage(config_file=os.path.join(BASE_DIR, ".coveragerc"),
-                   branch=True, auto_data=False )
-    cov.start()
+        # multiprocessing.log_to_stderr(logging.DEBUG)
+        tasks = multiprocessing.JoinableQueue()
+        results = multiprocessing.Queue()
 
-    # # multiprocessing.log_to_stderr(logging.DEBUG)
-    # tasks = multiprocessing.JoinableQueue()
-    # results = multiprocessing.Queue()
-    #
-    # num_consumers = int(os.environ.get('NUM_WORKERS', 6))
-    # consumers = [NoseWorker(tasks, results) for i in range(num_consumers)]
-    # for w in consumers:
-    #     w.start()
-    #
-    # num_jobs = 0
-    for job in generate_cloud_answer_tasks():
-        print("Job is :")
-        print(job)
-        task = NoseTask(job)
-        res = task()
-        print(res)
+        num_consumers = int(os.environ.get('NUM_WORKERS', 6))
+        consumers = [NoseWorker(tasks, results) for i in range(num_consumers)]
+        for w in consumers:
+            w.start()
 
-    cov.stop()
-    cov.combine()
-    cov.save()
-    cov.xml_report(outfile=os.path.join(BASE_DIR, "coverage.xml"))
-    cov.report()
+        num_jobs = 0
+        for job in generate_tasks_input():
+            if job[1]:
+                num_consumers -= 1  # take into account exclusive jobs
+            tasks.put(NoseTask(job))
+            num_jobs += 1
+
+        for i in range(num_consumers):
+            tasks.put(None)
+
+        tasks.join()
+
+        while num_jobs:
+            result = results.get()
+            num_jobs -= 1
+    finally:
+        cov.stop()
+        cov.xml_report(outfile="coverage.xml", ignore_errors=True)
