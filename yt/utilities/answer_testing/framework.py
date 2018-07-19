@@ -157,6 +157,7 @@ class AnswerTesting(Plugin):
         # Initialize answer/reference storage
         AnswerTestingTest.reference_storage = self.storage = \
                 storage_class(self.compare_name, self.store_name)
+        AnswerTestingTest.options = options
 
         self.local_results = options.local_results
         global run_big_data
@@ -331,6 +332,7 @@ class AnswerTestingTest(object):
     reference_storage = None
     result_storage = None
     prefix = ""
+    options = None
     def __init__(self, ds_fn):
         if ds_fn is None:
             self.ds = None
@@ -343,6 +345,16 @@ class AnswerTestingTest(object):
         if AnswerTestingTest.result_storage is None:
             return
         nv = self.run()
+
+        # This is for running answer test when `--answer-name` is not set in
+        # nosetests command line arguments. In this case, set the answer_name
+        # from the `prefix` keyword in the test case
+        if self.options.answer_name is None and self.prefix:
+            answer_dir = os.path.realpath(self.options.output_dir)
+            ref_name = "%s/%s/%s" % (answer_dir, self.prefix, self.prefix)
+            self.reference_storage.reference_name = ref_name
+            self.reference_storage.answer_name = self.prefix
+
         if self.reference_storage.reference_name is not None:
             dd = self.reference_storage.get(self.storage_name)
             if dd is None or self.description not in dd:
