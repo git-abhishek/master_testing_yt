@@ -350,12 +350,23 @@ class AnswerTestingTest(object):
         # nosetests command line arguments. In this case, set the answer_name
         # from the `prefix` keyword in the test case
         if self.options.answer_name is None and self.prefix:
-            answer_dir = os.path.realpath(self.options.output_dir)
-            ref_name = "%s/%s/%s" % (answer_dir, self.prefix, self.prefix)
+            answer_store_dir = os.path.realpath(self.options.output_dir)
+            ref_name = "%s/%s/%s" % (answer_store_dir, self.prefix, self.prefix)
             self.reference_storage.reference_name = ref_name
             self.reference_storage.answer_name = self.prefix
 
+            # If we are generating golden answers (passed --answer-store arg):
+            # - create the answer directory for this test
+            # - self.reference_storage.answer_name will be path to answer files
+            if self.options.store_results:
+                answer_test_dir = "%s/%s" % (answer_store_dir, self.prefix)
+                if not os.path.isdir(answer_test_dir):
+                    os.makedirs(answer_test_dir)
+                self.reference_storage.reference_name = None
+                self.reference_storage.answer_name = ref_name
+
         if self.reference_storage.reference_name is not None:
+            # Compare test generated values against the golden answer
             dd = self.reference_storage.get(self.storage_name)
             if dd is None or self.description not in dd:
                 raise YTNoOldAnswer(
@@ -363,6 +374,7 @@ class AnswerTestingTest(object):
             ov = dd[self.description]
             self.compare(nv, ov)
         else:
+            # Store results, hence do nothing (in case of --answer-store arg)
             ov = None
         self.result_storage[self.storage_name][self.description] = nv
 
