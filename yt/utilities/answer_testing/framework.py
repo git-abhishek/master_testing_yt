@@ -143,7 +143,13 @@ class AnswerTesting(Plugin):
                 self.compare_name = "%s/%s/%s" % \
                     (os.path.realpath(options.output_dir), self.compare_name,
                      self.compare_name)
-            if self.store_name is not None and options.store_results:
+
+            # Create a local directory only when `options.answer_name` is
+            # provided. If it is not provided then creating local directory
+            # will depend on the answer_name from the `prefix` value of the
+            # test, this case is handled in AnswerTestingTest.
+            if self.store_name is not None and options.store_results \
+                    and options.answer_name is not None:
                 name_dir_path = "%s/%s" % \
                     (os.path.realpath(options.output_dir),
                     self.store_name)
