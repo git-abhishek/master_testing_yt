@@ -326,7 +326,7 @@ def parse_nose_xml(nose_xml):
                   , "Error (msg):", error.attrib["message"])
             if "No such file or directory" in error.attrib["message"]:
                 missing_answers.append(test_name)
-            elif error.attrib["type"] == "builtins.AssertionError":
+            elif "Items are not equal" in error.attrib["message"]:
                 img_path = extract_image_locations(error.attrib["message"])
                 if img_path:
                     failed_answers.append((test_name, img_path))
