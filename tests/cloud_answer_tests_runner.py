@@ -368,23 +368,28 @@ if __name__ == "__main__":
                  '--attr=answer_test', '--local-dir=%s' % ANSWER_STORE,
                  '--with-xunit', '--xunit-file=%s' % NOSETEST_XML, 'yt']
     result = nose.run(argv=test_argv, addplugins=[AnswerTesting()], exit=False)
-
+    print("Nose run status: ", result)
+    log.info("logging nose result:" + str(result))
     if args.upload_failed_tests or args.upload_missing_answers:
         failed_answers, missing_answers = parse_nose_xml(NOSETEST_XML)
-
+    print("failed_answers", failed_answers)
+    print("missing_answers", missing_answers)
     if args.upload_failed_tests and failed_answers:
         response = upload_failed_answers(failed_answers)
+        print("Failed response",response)
         if response.ok:
             msg = " Successfully uploaded failed answer tests result."
             log.info(COLOR_BLUE + msg + COLOR_RESET)
             log.info(COLOR_BLUE + " " + response.text + COLOR_RESET)
+            print(msg+"\n"+response.text)
 
     if args.upload_missing_answers and missing_answers:
         response = upload_missing_answers(missing_answers)
+        print("Missing response", response)
         if response.ok:
             msg = " Successfully uploaded missing answer tests."
             log.info(COLOR_CYAN + msg + COLOR_RESET)
             log.info(COLOR_CYAN + " " + response.text + COLOR_RESET)
-
+            print(msg + "\n" + response.text)
     # 0 on success and 1 on failure
     sys.exit(not result)

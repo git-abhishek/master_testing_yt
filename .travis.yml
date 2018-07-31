@@ -63,15 +63,18 @@ install:
 
 jobs:
   include:
-    - stage: lint
-      python: 3.6
-      env: MOCK= NOSETIMER= NOSE= CODECOV= COVERAGE= NUMPY= CYTHON= MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON= PANDAS= REQUESTS=
-      script: flake8 yt/
 
-    - stage: lint
+    - stage: tests
+      name: "Python: 2.7 Answer Test"
       python: 2.7
-      env: MOCK= NOSETIMER= NOSE= CODECOV= COVERAGE= NUMPY= CYTHON= MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON= PANDAS= REQUESTS=
-      script: flake8 yt/
+      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
+      script: coverage run tests/cloud_answer_tests_runner.py -f -m
+
+    - stage: tests
+      name: "Python: 3.6 Answer Test"
+      python: 3.6
+      env: FLAKE8=
+      script: coverage run tests/cloud_answer_tests_runner.py -f -m
 
     - stage: tests
       name: "Python: 2.7 Unit Test"
@@ -96,18 +99,6 @@ jobs:
       python: 3.6
       env: FLAKE8=
       script: coverage run $(which nosetests) --attr "!answer_test" -c nose.cfg
-
-    - stage: tests
-      name: "Python: 2.7 Answer Test"
-      python: 2.7
-      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
-      script: coverage run tests/cloud_answer_tests_runner.py -f -m
-
-    - stage: tests
-      name: "Python: 3.6 Answer Test"
-      python: 3.6
-      env: FLAKE8=
-      script: coverage run tests/cloud_answer_tests_runner.py -f -m
 
     - stage: tests
       name: "Xcode: xcode7.3 Unit Test"
