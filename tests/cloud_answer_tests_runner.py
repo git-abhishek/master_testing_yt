@@ -20,6 +20,7 @@ import logging
 import os
 import re
 import shutil
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
@@ -191,7 +192,7 @@ def generate_missing_answers(answer_dir, missing_answers):
                  '--local-dir=%s' % answer_dir, '--answer-store']
 
     for job in missing_answers:
-        log.info("Generating answers for " + job)
+        log.info(" Generating answers for " + job)
         status &= nose.run(argv=test_argv+[job], addplugins=[AnswerTesting()],
                            exit=False)
     return status
@@ -349,6 +350,11 @@ if __name__ == "__main__":
                              "answer-store.")
     args = parser.parse_args()
 
+    # ANSI color codes
+    COLOR_BLUE = '\x1b[34;1m'
+    COLOR_CYAN = '\x1b[36;1m'
+    COLOR_RESET = '\x1b[0m'
+
     ANSWER_STORE = ytcfg.get("yt", "test_storage_dir")
     if not ANSWER_STORE or ANSWER_STORE == "/does/not/exist":
         ANSWER_STORE = "answer-store"
@@ -369,11 +375,16 @@ if __name__ == "__main__":
     if args.upload_failed_tests and failed_answers:
         response = upload_failed_answers(failed_answers)
         if response.ok:
-            log.info("Successfully uploaded failed answer tests result:")
-            log.info(response.text)
+            msg = " Successfully uploaded failed answer tests result."
+            log.info(COLOR_BLUE + msg + COLOR_RESET)
+            log.info(COLOR_BLUE + " " + response.text + COLOR_RESET)
 
     if args.upload_missing_answers and missing_answers:
         response = upload_missing_answers(missing_answers)
         if response.ok:
-            log.info("Successfully uploaded missing answer tests:")
-            log.info(response.text)
+            msg = " Successfully uploaded missing answer tests."
+            log.info(COLOR_CYAN + msg + COLOR_RESET)
+            log.info(COLOR_CYAN + " " + response.text + COLOR_RESET)
+
+    # 0 on success and 1 on failure
+    sys.exit(not result)
