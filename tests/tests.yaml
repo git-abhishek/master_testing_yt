@@ -124,7 +124,5 @@ answer_tests:
 other_tests:
   unittests:
      - '--exclude=test_mesh_slices'  # disable randomly failing test
-     - '--exclude=yt/visualization/tests/test_line_plots.py:test_line_plot'
-     - '--exclude=yt/visualization/tests/test_line_plots.py:test_multi_line_plot'
   cookbook:
      - 'doc/source/cookbook/tests/test_cookbook.py'

@@ -1,5 +1,0 @@
-answer_tests:
-  answers_line_plot:
-    - yt/visualization/tests/test_line_plots.py:test_line_plot
-  answers_multi_line_plot:
-    - yt/visualization/tests/test_line_plots.py:test_multi_line_plot
