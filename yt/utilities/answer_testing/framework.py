@@ -354,6 +354,10 @@ class AnswerTestingTest(object):
         # nosetests command line arguments. In this case, set the answer_name
         # from the `prefix` keyword in the test case
         if self.options.answer_name is None and self.prefix:
+            pyver = "py{}{}".format(sys.version_info.major,
+                                    sys.version_info.minor)
+            self.prefix = "{}_{}".format(pyver, self.prefix)
+
             answer_store_dir = os.path.realpath(self.options.output_dir)
             ref_name = os.path.join(answer_store_dir, self.prefix, self.prefix)
             self.reference_storage.reference_name = ref_name
