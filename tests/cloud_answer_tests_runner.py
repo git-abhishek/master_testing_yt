@@ -317,12 +317,14 @@ def parse_nose_xml(nose_xml):
 
     tree = ET.parse(nose_xml)
     testsuite = tree.getroot()
-
+    print("Reading nose_xml:", testsuite)
     for testcase in testsuite:
         for error in testcase:
             test_name = testcase.attrib["classname"] + ":" \
                         + testcase.attrib["name"]
-            if error.attrib["type"] == "builtins.FileNotFoundError":
+            print("test_name:", test_name, "Error (type):", error.attrib["type"]
+                  , "Error (msg):", error.attrib["message"])
+            if "No such file or directory" in error.attrib["message"]:
                 missing_answers.append(test_name)
             elif error.attrib["type"] == "builtins.AssertionError":
                 img_path = extract_image_locations(error.attrib["message"])
