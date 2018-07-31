@@ -350,6 +350,11 @@ class AnswerTestingTest(object):
             return
         nv = self.run()
 
+        if self.prefix:
+            pyver = "py{}{}".format(sys.version_info.major,
+                                    sys.version_info.minor)
+            self.prefix = "{}_{}".format(pyver, self.prefix)
+
         # This is for running answer test when `--answer-name` is not set in
         # nosetests command line arguments. In this case, set the answer_name
         # from the `prefix` keyword in the test case
