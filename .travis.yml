@@ -66,32 +66,50 @@ jobs:
     - stage: lint
       python: 3.6
       env: MOCK= NOSETIMER= NOSE= CODECOV= COVERAGE= NUMPY= CYTHON= MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON= PANDAS=
-      script: flake8 yt/
+      script:
+      - df -h
+      - flake8 yt/
+      - df -h
 
     - stage: lint
       python: 2.7
       env: MOCK= NOSETIMER= NOSE= CODECOV= COVERAGE= NUMPY= CYTHON= MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON= PANDAS=
-      script: flake8 yt/
+      script:
+      - df -h
+      - flake8 yt/
+      - df -h
 
     - stage: tests
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script:
+      - df -h
+      - coverage run $(which nosetests) -c nose.cfg yt
+      - df -h
 
     - stage: tests
       python: 2.7
       env: FLAKE8=
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script:
+      - df -h
+      - coverage run $(which nosetests) -c nose.cfg yt
+      - df -h
 
     - stage: tests
       python: 3.5
       env: FLAKE8=
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script:
+      - df -h
+      - coverage run $(which nosetests) -c nose.cfg yt
+      - df -h
 
     - stage: tests
       python: 3.6
       env: FLAKE8=
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script:
+      - df -h
+      - coverage run $(which nosetests) -c nose.cfg yt
+      - df -h
 
     - stage: tests
       os: osx
@@ -103,7 +121,10 @@ jobs:
           - $HOME/Library/Caches/pip
           # `cache` does not support `env`-like `global` so copy-paste from top
           - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
-      script: coverage run $(which nosetests) -c nose.cfg yt
+      script:
+      - df -h
+      - coverage run $(which nosetests) -c nose.cfg yt
+      - df -h
 
 after_success:
   - |
