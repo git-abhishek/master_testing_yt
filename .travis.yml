@@ -1,6 +1,5 @@
 language: python
-sudo: required
-dist: precise
+sudo: false
 cache:
   pip: true
   directories:
@@ -68,49 +67,62 @@ jobs:
       python: 3.6
       env: MOCK= NOSETIMER= NOSE= CODECOV= COVERAGE= NUMPY= CYTHON= MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON= PANDAS=
       script:
+      - free  -th --giga
       - df -h
       - flake8 yt/
       - df -h
+      - free  -th --giga
 
     - stage: lint
       python: 2.7
       env: MOCK= NOSETIMER= NOSE= CODECOV= COVERAGE= NUMPY= CYTHON= MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON= PANDAS=
       script:
+      - free  -th --giga
       - df -h
       - flake8 yt/
       - df -h
+      - free -th --giga
 
     - stage: tests
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
       script:
+      - free  -th --giga
       - df -h
       - coverage run $(which nosetests) -c nose.cfg yt
       - df -h
+      - free  -th --giga
+
 
     - stage: tests
       python: 2.7
       env: FLAKE8=
       script:
+      - free  -th --giga
       - df -h
       - coverage run $(which nosetests) -c nose.cfg yt
       - df -h
+      - free  -th --giga
 
     - stage: tests
       python: 3.5
       env: FLAKE8=
       script:
+      - free  -th --giga
       - df -h
       - coverage run $(which nosetests) -c nose.cfg yt
       - df -h
+      - free  -th --giga
 
     - stage: tests
       python: 3.6
       env: FLAKE8=
       script:
+      - free  -th --giga
       - df -h
       - coverage run $(which nosetests) -c nose.cfg yt
       - df -h
+      - free  -th --giga
 
     - stage: tests
       os: osx
@@ -123,9 +135,12 @@ jobs:
           # `cache` does not support `env`-like `global` so copy-paste from top
           - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
       script:
+      - free  -th --giga
       - df -h
       - coverage run $(which nosetests) -c nose.cfg yt
       - df -h
+      - free  -th --giga
+
 
 after_success:
   - |
