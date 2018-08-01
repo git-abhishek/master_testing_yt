@@ -353,9 +353,25 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # ANSI color codes
-    COLOR_BLUE = '\x1b[34;1m'
+    COLOR_PURPLE = '\x1b[35;1m'
     COLOR_CYAN = '\x1b[36;1m'
     COLOR_RESET = '\x1b[0m'
+    FLAG_EMOJI = u' \U0001F6A9 '
+
+    url = "http://use.yt/upload/73869544"
+
+    msg = (FLAG_EMOJI + COLOR_PURPLE +
+           "Successfully uploaded failed answer test(s) result."
+           " More details about the test failure can be found at the"
+           " URL: " + url + COLOR_RESET + FLAG_EMOJI)
+    log.info(msg)
+
+    msg = (FLAG_EMOJI + COLOR_CYAN +
+               "Successfully uploaded missing answer tests at URL:" +
+               url + ". Please commit these answers in the repository"
+                     " answer-store." +
+               COLOR_RESET + FLAG_EMOJI)
+    log.info(msg)
 
     ANSWER_STORE = ytcfg.get("yt", "test_storage_dir")
     if not ANSWER_STORE or ANSWER_STORE == "/does/not/exist":
@@ -363,35 +379,35 @@ if __name__ == "__main__":
 
     NOSETEST_XML = "answer_testing_nosetests.xml"
 
-    # first parameter is program name
-    # https://github.com/python/cpython/blob/master/Lib/unittest/main.py#L99
-    test_argv = [os.path.basename(__file__), '--with-answer-testing',
-                 '--nologcapture', '-s', '-d', '-v', '--local',
-                 '--attr=answer_test', '--local-dir=%s' % ANSWER_STORE,
-                 '--with-xunit', '--xunit-file=%s' % NOSETEST_XML, 'yt']
-    result = nose.run(argv=test_argv, addplugins=[AnswerTesting()], exit=False)
-    print("Nose run status: ", result)
-    log.info("logging nose result:" + str(result))
-    if args.upload_failed_tests or args.upload_missing_answers:
-        failed_answers, missing_answers = parse_nose_xml(NOSETEST_XML)
-    print("failed_answers", failed_answers)
-    print("missing_answers", missing_answers)
-    if args.upload_failed_tests and failed_answers:
-        response = upload_failed_answers(failed_answers)
-        print("Failed response",response)
-        if response.ok:
-            msg = " Successfully uploaded failed answer tests result."
-            log.info(COLOR_BLUE + msg + COLOR_RESET)
-            log.info(COLOR_BLUE + " " + response.text + COLOR_RESET)
-            print(msg+"\n"+response.text)
-
-    if args.upload_missing_answers and missing_answers:
-        response = upload_missing_answers(missing_answers)
-        print("Missing response", response)
-        if response.ok:
-            msg = " Successfully uploaded missing answer tests."
-            log.info(COLOR_CYAN + msg + COLOR_RESET)
-            log.info(COLOR_CYAN + " " + response.text + COLOR_RESET)
-            print(msg + "\n" + response.text)
-    # 0 on success and 1 on failure
-    sys.exit(not result)
+    # # first parameter is program name
+    # # https://github.com/python/cpython/blob/master/Lib/unittest/main.py#L99
+    # test_argv = [os.path.basename(__file__), '--with-answer-testing',
+    #              '--nologcapture', '-s', '-d', '-v', '--local',
+    #              '--attr=answer_test', '--local-dir=%s' % ANSWER_STORE,
+    #              '--with-xunit', '--xunit-file=%s' % NOSETEST_XML, 'yt']
+    # # result = nose.run(argv=test_argv, addplugins=[AnswerTesting()], exit=False)
+    # print("Nose run status: ", result)
+    # log.info("logging nose result:" + str(result))
+    # if args.upload_failed_tests or args.upload_missing_answers:
+    #     failed_answers, missing_answers = parse_nose_xml(NOSETEST_XML)
+    # print("failed_answers", failed_answers)
+    # print("missing_answers", missing_answers)
+    # if args.upload_failed_tests and failed_answers:
+    #     response = upload_failed_answers(failed_answers)
+    #     print("Failed response",response)
+    #     if response.ok:
+    #         msg = " Successfully uploaded failed answer tests result."
+    #         log.info(COLOR_BLUE + msg + COLOR_RESET)
+    #         log.info(COLOR_BLUE + " " + response.text + COLOR_RESET)
+    #         print(msg+"\n"+response.text)
+    #
+    # if args.upload_missing_answers and missing_answers:
+    #     response = upload_missing_answers(missing_answers)
+    #     print("Missing response", response)
+    #     if response.ok:
+    #         msg = " Successfully uploaded missing answer tests."
+    #         log.info(COLOR_CYAN + msg + COLOR_RESET)
+    #         log.info(COLOR_CYAN + " " + response.text + COLOR_RESET)
+    #         print(msg + "\n" + response.text)
+    # # 0 on success and 1 on failure
+    # # sys.exit(not result)
