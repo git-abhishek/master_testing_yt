@@ -44,7 +44,7 @@ def setup():
 
 
 TEST_FLNMS = ['test.png']
-M7 = "DD0010/moving7_0010"
+M7 = "/home/travis/build/git-abhishek/master_testing_yt/tests/DD0010/moving7_0010"
 WT = "WindTunnel/windtunnel_4lev_hdf5_plt_cnt_0030"
 
 FPROPS = {'family': 'sans-serif', 'style': 'italic',
