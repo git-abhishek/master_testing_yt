@@ -159,7 +159,7 @@ CALLBACK_TESTS = (
     #("simple_all", (simple_contour, simple_velocity, simple_streamlines)),
 )
 
-@requires_ds(M7)
+
 def test_attributes():
     """Test plot member functions that aren't callbacks"""
     plot_field = 'density'
@@ -172,10 +172,11 @@ def test_attributes():
                 test = PlotWindowAttributeTest(ds, plot_field, ax, attr_name,
                                                args, decimals)
                 test_attributes.__name__ = test.description
+                test.answer_name = "attributes"
                 yield test
-                for n, r in CALLBACK_TESTS:
-                    yield PlotWindowAttributeTest(ds, plot_field, ax, attr_name,
-                        args, decimals, callback_id=n, callback_runners=r)
+                # for n, r in CALLBACK_TESTS:
+                #     yield PlotWindowAttributeTest(ds, plot_field, ax, attr_name,
+                #         args, decimals, callback_id=n, callback_runners=r)
 
 
 @requires_ds(WT)

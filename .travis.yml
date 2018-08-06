@@ -63,66 +63,26 @@ install:
 
 jobs:
   include:
-    - stage: lint
-      python: 3.6
-      env: MOCK= NOSETIMER= NOSE= CODECOV= COVERAGE= NUMPY= CYTHON= MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON= PANDAS= REQUESTS=
-      script: flake8 yt/
-
-    - stage: lint
-      python: 2.7
-      env: MOCK= NOSETIMER= NOSE= CODECOV= COVERAGE= NUMPY= CYTHON= MATPLOTLIB= SYMPY= H5PY= SCIPY= FASTCACHE= IPYTHON= PANDAS= REQUESTS=
-      script: flake8 yt/
-
     - stage: tests
-      name: "Python: 2.7 Unit Tests"
-      python: 2.7
-      env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0 REQUESTS=
-      script: coverage run $(which nosetests) -c nose_unit.cfg
-
-    - stage: tests
-      name: "Python: 2.7 Unit Tests"
-      python: 2.7
-      env: FLAKE8= REQUESTS=
-      script: coverage run $(which nosetests) -c nose_unit.cfg
-
-    - stage: tests
-      name: "Python: 3.5 Unit Tests"
-      python: 3.5
-      env: FLAKE8= REQUESTS=
-      script: coverage run $(which nosetests) -c nose_unit.cfg
-
-    - stage: tests
-      name: "Python: 3.6 Unit Tests"
-      python: 3.6
-      env: FLAKE8= REQUESTS=
-      script: coverage run $(which nosetests) -c nose_unit.cfg
-
-    - stage: tests
-      name: "Python: 2.7 Answer Tests"
+      name: "Python: 2.7 Answer Test"
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
-      script: coverage run $(which nosetests) -c nose_answer.cfg
-      after_failure: python tests/report_failed_answers.py -f -m --xunit-file "answer_nosetests.xml"
+      script: nosetests --with-answer-testing --nologcapture -d -v -s --local --local-dir=answer-store --answer-store yt/visualization/tests/test_plotwindow.py:test_attributes
 
     - stage: tests
-      name: "Python: 3.6 Answer Tests"
+      name: "Python: 3.6 Answer Test"
       python: 3.6
       env: FLAKE8=
-      script: coverage run $(which nosetests) -c nose_answer.cfg
-      after_failure: python tests/report_failed_answers.py -f -m --xunit-file "answer_nosetests.xml"
+      script: nosetests --with-answer-testing --nologcapture -d -v -s --local --local-dir=answer-store  yt/visualization/tests/test_plotwindow.py:test_attributes
 
     - stage: tests
-      name: "Xcode: xcode7.3 Unit Tests"
-      os: osx
-      osx_image: xcode7.3
-      language: generic  # https://github.com/travis-ci/travis-ci/issues/2312
-      cache:
-        pip: false
-        directories:
-          - $HOME/Library/Caches/pip
-          # `cache` does not support `env`-like `global` so copy-paste from top
-          - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
-      script: coverage run $(which nosetests) -c nose_unit.cfg
+      name: "Python: 3.6 Answer Test"
+      python: 3.6
+      env: FLAKE8=
+      script:
+      - nosetests --with-answer-testing --nologcapture -d -v -s --local --local-dir=answer-store --answer-store yt/visualization/tests/test_plotwindow.py:test_attributes
+      - nosetests --with-answer-testing --nologcapture -d -v -s --local --local-dir=answer-store  yt/visualization/tests/test_plotwindow.py:test_attributes
+
 
 after_success:
   - |
