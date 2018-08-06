@@ -159,7 +159,7 @@ CALLBACK_TESTS = (
     #("simple_all", (simple_contour, simple_velocity, simple_streamlines)),
 )
 
-@requires_ds(M7)
+
 def test_attributes():
     """Test plot member functions that aren't callbacks"""
     plot_field = 'density'

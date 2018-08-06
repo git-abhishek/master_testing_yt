@@ -67,13 +67,21 @@ jobs:
       name: "Python: 2.7 Answer Test"
       python: 2.7
       env: NUMPY=numpy==1.10.4 CYTHON=cython==0.24 MATPLOTLIB=matplotlib==1.5.3 SYMPY=sympy==1.0 H5PY= SCIPY= FASTCACHE= FLAKE8= IPYTHON=ipython==1.0
-      script: coverage run tests/cloud_answer_tests_runner.py -f -m
+      script: nosetests --with-answer-testing --nologcapture -d -v -s --local --local-dir=answer-store --answer-store yt/visualization/tests/test_plotwindow.py:test_attributes
 
     - stage: tests
       name: "Python: 3.6 Answer Test"
       python: 3.6
       env: FLAKE8=
-      script: coverage run tests/cloud_answer_tests_runner.py -f -m
+      script: nosetests --with-answer-testing --nologcapture -d -v -s --local --local-dir=answer-store  yt/visualization/tests/test_plotwindow.py:test_attributes
+
+    - stage: tests
+      name: "Python: 3.6 Answer Test"
+      python: 3.6
+      env: FLAKE8=
+      script:
+      - nosetests --with-answer-testing --nologcapture -d -v -s --local --local-dir=answer-store --answer-store yt/visualization/tests/test_plotwindow.py:test_attributes
+      - nosetests --with-answer-testing --nologcapture -d -v -s --local --local-dir=answer-store  yt/visualization/tests/test_plotwindow.py:test_attributes
 
 after_success:
   - |
