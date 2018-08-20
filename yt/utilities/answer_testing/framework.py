@@ -274,6 +274,7 @@ def can_run_ds(ds_fn, file_check = False):
     if isinstance(ds_fn, Dataset):
         return result_storage is not None
     path = ytcfg.get("yt", "test_data_dir")
+    print("Test dir path:", path)
     if not os.path.isdir(path):
         return False
     if file_check:
@@ -991,11 +992,15 @@ def requires_ds(ds_fn, big_data = False, file_check = False):
         return lambda: None
     def ftrue(func):
         return func
+    print("In require ds for:"+ds_fn)
     if run_big_data is False and big_data is True:
+        print(" Return False")
         return ffalse
     elif not can_run_ds(ds_fn, file_check):
+        print(" Return False")
         return ffalse
     else:
+        print(" Return True")
         return ftrue
 
 def small_patch_amr(ds_fn, fields, input_center="max", input_weight="density"):
